@@ -123,7 +123,7 @@ head = {'Authorization': 'Bearer {}'.format(token)}
 
 
 # Read in shapefile as dataframe using geopandas
-nps = gpd.read_file('P:\\nasa_above\Study_area\\Above2.shp') 
+nps = gpd.read_file('P:\\nasa_above\Study_area\\ExtendedDomain.shp') 
 print(nps.head())                       # Print first few lines of dataframe
 
 # Extract a feature from shp file if there are multiple features. 
@@ -188,13 +188,62 @@ task_response
 # -----------------Check the status of the request ----------------------------
 
 # Limit API response to most recent entries, return as pretty json
-params = {'limit': 1, 'pretty': True} 
+params = {'limit': 3, 'pretty': True} 
 
 # Query task service, setting params and header 
 tasks_response = r.get('{}task'.format(api), params=params, headers=head).json() 
 tasks_response 
 
+#task_id = task_response['task_id']                                               
+# Set task id from request submission
+task_id = '4a04e9e5-1566-4f89-92bc-299aa39cfc51'
+
+# Call status service with specific task ID & user credentials
+status_response = r.get('{}status/{}'.format(api, task_id), headers=head).json() 
+status_response  
+
 ###############################################################################
+
+
+# --------------------------Download the data if ready ------------------------
+
+# set the output directory
+destDir = os.path.join('P:\\nasa_above\\Arctic\\Modis\\Data_Python', task_name)
+
+# Call API and return bundle contents for the task_id as json
+bundle = r.get(f"{api}/bundle/{task_id}").json()  
+bundle
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
