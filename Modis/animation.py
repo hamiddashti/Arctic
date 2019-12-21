@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Dec 16 08:48:27 2019
+This code save all the images as gif format and then create animation from them, 
+Its good for visual change detection stuff
+
+The input should be a nc format
 
 @author: hamiddashti
 """
@@ -13,6 +17,7 @@ import geopandas as gpd
 import imageio
 
 import salem
+
 
 os.chdir('P:\\nasa_above\\working\\modis_analyses')
     # Read the nc file as xarray DataSet

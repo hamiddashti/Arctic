@@ -2,6 +2,9 @@
 """
 Created on Thu Nov 14 10:08:04 2019
 
+This is just for interacting with appeears tool from nasa for downloaing data
+I won't recommand appears for large areas since it is too slow!!!!!!
+
 @author: hamiddashti
 """
 """
