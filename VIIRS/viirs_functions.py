@@ -47,7 +47,7 @@ The output is a bash file (test.sh) which can be run as ./test.sh
 
 
 
-def modis_wget_generator(product,folder,tiles,dates,out_dir):
+def viirs_wget_generator(product,folder,tiles,dates,out_dir):
     
     import pandas as pd
     import numpy as np
@@ -73,7 +73,7 @@ def modis_wget_generator(product,folder,tiles,dates,out_dir):
         html = urllib2.urlopen(req).readlines()
         return html
     
-    #wget --user=hamiddashti --password=Iran1140 -p /tmp -r -nd --no-parent -A "*h11v06.006*.hdf" http://e4ftl01.cr.usgs.gov/MOTA/MCD15A3H.006/2002.07.04/
+    #wget --user=hamiddashti --password=Iran1140 -p /tmp -r -nd --no-parent -A "*h11v06.006*.h5" http://e4ftl01.cr.usgs.gov/MOTA/MCD15A3H.006/2002.07.04/
     url = 'https://e4ftl01.cr.usgs.gov/'
     
     """
@@ -130,7 +130,7 @@ def modis_wget_generator(product,folder,tiles,dates,out_dir):
     for i in np.arange(len(tiles)):
         for j in np.arange(len(modis_date)):
             tmp1 = 'wget --user=hamiddashti --password=Iran1140 -P ' +f_path[j]+ ' -r -nd --no-parent -A'
-            tmp2 = ' "*' + tiles[i]+'*.hdf" ' + url+folder+'/'+product+'/'+str(df['dates_available'][j])+'/ -q'    
+            tmp2 = ' "*' + tiles[i]+'*.h5" ' + url+folder+'/'+product+'/'+str(df['dates_available'][j])+'/ -q'    
             name_tmp = tmp1+tmp2
             name.append(name_tmp)
             

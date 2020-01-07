@@ -1,0 +1,21 @@
+
+***Create a date range using python pandas:
+
+dates=pd.date_range(start='1/1/2000', end='12/31/2010',periods=264)
+
+*** Selecting an area using cooridinate in xarray an nc file: 
+
+ds=ds.sel(lat=slice(75,45),lon=slice(-162,-51))
+
+
+*** extract the maximum/mean/std over time from xarray and nc files: 
+
+ds_ymax = ds.resample(time='AS').max()
+
+ds_mean = ds_ymax.mean(dim='time')
+ds_std = ds_ymax.std(dim='time')
+
+
+
+
+
