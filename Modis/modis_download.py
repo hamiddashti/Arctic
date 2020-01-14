@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec 19 12:22:34 2019
-
 @author: hamiddashti
 """
 
@@ -15,7 +14,7 @@ out_dir = '/data/ABOVE/MODIS/MCD15A3H/'
 
 #out_dir = '/run/user/1008/gvfs/smb-share:server=gaea,share=projects,user=hamiddashti/nasa_above/working/modis_analyses/my_data/'
 
-tiles=['h16v00', 'h12v01','h13v01','h14v01','h15v01','h16v01',
+tiles=['h12v01','h13v01','h14v01','h15v01','h16v01',
     
     'h10v02','h11v02','h12v02','h13v02','h14v02','h15v02',
     
@@ -25,7 +24,7 @@ tiles=['h16v00', 'h12v01','h13v01','h14v01','h15v01','h16v01',
 
 
 #dates format= "Y.m.d"
-dates = ["2002.07.04","2019.12.15"]
+dates = ["2002.07.04","2002.12.31"]
 
 
 modis_functions.modis_wget_generator(product,folder,tiles,dates,out_dir)
