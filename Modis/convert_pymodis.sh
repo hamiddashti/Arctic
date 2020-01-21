@@ -5,9 +5,16 @@
 # In this script I use the PyModis package for such conversion. It provides the
 # same exact results as APPEEARS tool.
 
-Path_in="/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
+## To implement: 
+# (1) copy this file to the root path where modis hdf files are stored 
+# in different directories based on the year of data collection. 
+#(2) creat a folder called Tifs and inside this folder create years folder (use make_dire.sh) for this task
+# (3) implement the code
 
-Path_out="/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Tifs/"
+
+Path_in="/data/ABOVE/MODIS/MCD15A3H/"
+
+Path_out="/data/ABOVE/MODIS/MCD15A3H/Tifs/"
 
 
 #cp $Path_in/dir_list.txt .
