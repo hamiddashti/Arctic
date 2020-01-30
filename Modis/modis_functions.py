@@ -52,22 +52,22 @@ def modis_wget_generator(product,folder,tiles,dates,out_dir):
     import pandas as pd
     import numpy as np
     from datetime import datetime
-    import os
+    #import os
    
     def return_url(url):
-        import time
+        #import time
         try:
             import urllib.request as urllib2
         except ImportError:
             import urllib2
-        import logging
+        #import logging
     
-        LOG = logging.getLogger( __name__ )
-        the_day_today = time.asctime().split()[0]
-        the_hour_now = int(time.asctime().split()[3].split(":")[0])
-        if the_day_today == "Wed" and 14 <= the_hour_now <= 17:
-            LOG.info("Sleeping for %d hours... Yawn!" % (18 - the_hour_now))
-            time.sleep(60 * 60 * (18 - the_hour_now))
+        #LOG = logging.getLogger( __name__ )
+        #the_day_today = time.asctime().split()[0]
+        #the_hour_now = int(time.asctime().split()[3].split(":")[0])
+        #if the_day_today == "Wed" and 14 <= the_hour_now <= 17:
+        #    LOG.info("Sleeping for %d hours... Yawn!" % (18 - the_hour_now))
+        #    time.sleep(60 * 60 * (18 - the_hour_now))
 
         req = urllib2.Request("%s" % (url), None)
         html = urllib2.urlopen(req).readlines()
@@ -115,10 +115,10 @@ def modis_wget_generator(product,folder,tiles,dates,out_dir):
     years = np.arange(year1,year2+1,1)
     
     
-    for k in np.arange(len(years)):
-        tmp_dir = str(years[k])
-        new_dir = out_dir+tmp_dir
-        os.mkdir(new_dir)
+    #for k in np.arange(len(years)):
+    #    tmp_dir = str(years[k])
+    #    new_dir = out_dir+tmp_dir
+    #    os.mkdir(new_dir)
     
     f_path = []
     for n in np.arange(len(df)):
@@ -257,8 +257,95 @@ def lai_filter(filepath,out,std):
 #######################End of lai_filter function ###################################
     
     
+####################### Clipping tif files based on the shapefile ###################
+"""
+The following function is to clip the tif files (produced by pymodis) based on the shape file
+
+Here are some point:
+- shape files are the intersection between the Above domain and modis tiles
+- the name of the shapefiles are the based on modis tiles (e.g. h11v02.shp)
+- Before running the code its necessary to create year folder in the out_dir_tmp 
+The following is an example of how to run the code: 
+
+        
+import sys
+sys.path.append('/data/home/hamiddashti/mnt/nasa_above/Arctic/Modis')
+import modis_functions
+import numpy as np
+import glob
+import os
+
+tif_dir =  '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/tmp/Tifs/'
+out_dir_tmp = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/tmp/Tifs/clipped/'
+shp_dir = '/data/home/hamiddashti/mnt/nasa_above/Study_area/Clean_study_area/'
+year1 = 2002
+year2 = 2004
+years_list = np.arange(year1,year2)
+
+tiles_list=['h12v01','h13v01','h14v01','h15v01','h16v01',
+
+    'h09v02','h10v02','h11v02','h12v02','h13v02','h14v02','h15v02',
+
+    'h09v03','h10v03','h11v03','h12v03','h13v03',
+
+    'h11v04']
+
+#tile='h12v01'
+#year=2002
+
+for year in years_list:
+
+   in_dir = tif_dir+str(year)+'/'
+   out_dir = out_dir_tmp+str(year)+'/'
+
+
+
+   for tile in tiles_list:
+       tmp_tif = in_dir+'*'+tile+'*.tif'
+       file_list = glob.glob(tmp_tif)
+       shp_file = shp_dir+tile+'.shp'
+
+       for file in file_list:
+           base_name = os.path.basename(file)
+           print(file)
+           modis_functions.tif_clip(base_name,shp_file,in_dir,out_dir)
+"""
+def tif_clip(tif_file,shp_file,in_dir,out_dir):
+    
+    import rasterio
+    from rasterio.mask import mask
+    import geopandas as gpd
+    import pycrs
     
     
+    rastin = in_dir + tif_file   #The input raster
+    data = rasterio.open(rastin)
+    geo = gpd.read_file(shp_file) # the shp file 
+    
+    def getFeatures(gdf):
+        """Function to parse features from GeoDataFrame in such a manner that rasterio wants them"""
+        import json
+        return [json.loads(gdf.to_json())['features'][0]['geometry']]
+    
+    coords = getFeatures(geo)
+    
+    out_img, out_transform = mask(data, shapes=coords, crop=True)
+    
+    out_meta = data.meta.copy()
+    epsg_code = int(data.crs.data['init'][5:])
+    
+    out_meta.update({"driver": "GTiff",
+                         "height": out_img.shape[1],
+                         "width": out_img.shape[2],
+                         "transform": out_transform,
+                         "crs": pycrs.parse.from_epsg_code(epsg_code).to_proj4()}
+                                 )
+    out_file = out_dir+tif_file
+    with rasterio.open(out_file, "w", **out_meta) as dest:
+            dest.write(out_img)
+    
+            
+
     
     
     
