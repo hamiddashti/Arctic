@@ -1,0 +1,16 @@
+ENVI
+description = {
+Landsat ARD Disturbance Index}
+samples = 5000
+lines   = 5000
+bands   = 5
+header offset = 0
+file type = ENVI Standard
+data type = 4
+interleave = bip
+byte order = 0
+map info = {Albers Conical Equal Area, 1, 1, -1515585, 1214805, 30, 30,WGS-84}
+projection info = {9, 6378137, 6356752.314245179, 23, -96, 0, 0, 29.5, 45.5,WGS-84, Albers Conical Equal Area}
+coordinate system string = {PROJCS["Albers",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Albers"],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_origin",23],PARAMETER["central_meridian",-96],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]}
+band names = {
+DI_inst, DI_cur, DI_mean, DI_std, DI_binary}
