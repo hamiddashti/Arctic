@@ -9,7 +9,7 @@ bands which includes:
     
 and are stacked over time 1982-2014. 
 
-Note: these files are original .dat file, in anther word I did not process them for quality etc.
+Note: these files are filtered based on quality flag provided by Dong code.
     
 @author: hamiddashti
 """
@@ -24,7 +24,7 @@ import landsat_functions
 # This is the path to the input file    
 in_path = '/data/ABOVE/LANDSAT/ARD/h08v03/VI_LST/'
 
-out_path = '/data/ABOVE/LANDSAT/ARD/h08v03/VI_LST_NetCDF_Processed/' # this is where netcdf files will be stored
+out_path = '/data/ABOVE/LANDSAT/ARD/h08v03/VI_LST_NetCDF_Processed/Lower_Quality' # this is where netcdf files will be stored
 
 tile = '008003'  # ARD tile number
 nrow = 5000      # Numbr of rows of ARD files (5000) 
