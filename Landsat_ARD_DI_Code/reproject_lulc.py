@@ -19,7 +19,7 @@ n = len(absname)
 target_crs = xr.open_rasterio('/data/ABOVE/LANDSAT/ARD/h08v03/VI_LST/ARDCube_2009_119_008003_LT05.dat').rio.crs
 print('Total number of files to be reprojected is:'+str(n))
 
-for i in np.arange(2,3):
+for i in np.arange(0,n):
     print('projecting file number:'+str(i))
     print(os.path.basename(absname[i]))
     reproject(absname[i],target_crs,out_dir)

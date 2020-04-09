@@ -163,12 +163,12 @@ def season_stat(xfile, var_name, out_path):
 
 def reproject(file, target_crs, out_dir):
 # file: the absolute (full) path to the file (tif) that we want to reproject
-# target crs is the crs that we want to convert to. -----> df.rio.crs 
+# target crs: the crs that we want to convert to. -----> df.rio.crs 
 # out_dir: full path to the output directory
         
     f_name = os.path.basename(file)
     #print(f_name)
     df = xr.open_rasterio(file)
     tmp = df.rio.reproject(target_crs,resampling=Resampling.nearest)
-    tmp.rio.to_raster(out_dir+'reproj_'+f_name)
+    tmp.rio.to_raster(out_dir+f_name)
     #print(tmp.rio.crs)
