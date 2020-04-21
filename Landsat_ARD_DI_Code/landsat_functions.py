@@ -10,12 +10,70 @@ import dask
 from timeit import default_timer as timer
 from matplotlib.ticker import MaxNLocator
 import pandas as pd
-import rasterio 
-import rioxarray 
+import rasterio
+import rioxarray
 import numpy as np
 from rasterio.enums import Resampling
 import os
 import glob
+
+
+def change_LC(xrfile, number_of_pixels):
+    # Produces the change in LC over time and produce a table
+    print("calculating the change in LC over time")
+    date = pd.date_range(start="1984", periods=31, freq="Y")
+    col_names = date.strftime("%Y")
+    number_of_classes = np.arange(1, 11)
+    # create empty dataframe
+    df = pd.DataFrame(index=number_of_classes, columns=col_names)
+    for i in np.arange(0, len(date)):
+        # count the number of each class in each year and save them in a dataframe.
+        b = xrfile.to_series().groupby("band").value_counts().loc[i + 1]
+        df.iloc[:, i] = b
+
+    # get the percent cover of each class
+    df = (df / number_of_pixels) * 100
+    # substitute the class numbers with class names ---> https://daac.ornl.gov/ABOVE/guides/Annual_Landcover_ABoVE.html
+    class_nemes = [
+        "Evergreen Forest",
+        "Deciduous Forest",
+        "Shrubland",
+        "Herbaceous",
+        "Sparsely Vegetated",
+        "Barren",
+        "Fen",
+        "Bog",
+        "Shallows/Littoral",
+        "Water",
+    ]
+
+    # Plot the time series of changes in the percent cover ----------
+    df.index = class_nemes
+    df_T = df.T
+    return df_T
+
+
+# ---------- The mode function ----------------- #
+# this function returns the mode of xarray object
+# along a dimension
+def _mode(*args, **kwargs):
+    from scipy import stats
+
+    vals = stats.mode(*args, **kwargs)
+    # only return the mode (discard the count)
+    return vals[0].squeeze()
+
+
+def mode(obj, dim):
+    # note: apply always moves core dimensions to the end
+    # usually axis is simply -1 but scipy's mode function doesn't seem to like that
+    # this means that this version will only work for DataArray's (not Datasets)
+    # assert isinstance(obj, xr.DataArray)
+    axis = obj.ndim - 1
+    return xr.apply_ufunc(_mode, obj, input_core_dims=[[dim]], kwargs={"axis": axis})
+
+
+####################################################
 
 
 def open_dat(path, fname, nrow, ncol):
@@ -24,6 +82,27 @@ def open_dat(path, fname, nrow, ncol):
     path_to_file = path + fname
     da = xr.open_rasterio(path_to_file, chunks={"x": ncol, "y": nrow, "band": 1})
     return da
+
+
+def my_plot_lulc_percent(df, ylabel, out_fig):
+    # This function produce the bar chart of LCC over time from the output of change_LC function. 
+    # Note that the format of the df should be like class percents are
+    # in clolumns and the years are in rows
+    fig1, ax1 = plt.subplots(figsize=(14, 8))
+    fsize = 14
+    plt.rc("font", family="serif")
+    # ------plot-------------------
+    df.plot.bar(ax=ax1, stacked=True)
+    # ------------------------------
+    plt.ylabel(ylabel, fontsize=fsize)
+    plt.xlabel("Time", fontsize=fsize)
+    plt.xticks(fontsize=fsize, rotation=90)
+    plt.yticks(fontsize=fsize)
+    plt.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+    plt.subplots_adjust(right=0.85)
+    plt.tight_layout()
+    plt.savefig(out_fig)
+    plt.close("all")
 
 
 def my_plot_point(df, ylabel, out_fig):
@@ -102,8 +181,8 @@ def month_stat(xfile, var_name, out_path):
 
 
 def season_stat(xfile, var_name, out_path):
-    
-    #SEASONAL COUNT
+
+    # SEASONAL COUNT
     count = xfile.resample(time="QS-DEC").count()
     count = count.where(count != 0)
     val = count.max(dim=["x", "y"]).values
@@ -121,7 +200,7 @@ def season_stat(xfile, var_name, out_path):
     out_fig = out_path + var_name + "_season_count.png"
     my_plot_point(df, ylabel, out_fig)
 
-    #SEASONAL MEAN
+    # SEASONAL MEAN
     var_mean = xfile.resample(time="QS-DEC").mean()
     val = var_mean.mean(dim=["x", "y"]).values
     date = var_mean.time.values
@@ -138,7 +217,7 @@ def season_stat(xfile, var_name, out_path):
     out_fig = out_path + var_name + "_season_mean.png"
     my_plot_point(df, ylabel, out_fig)
 
-    #SEASONAL GROUP COUNT
+    # SEASONAL GROUP COUNT
     group_count = xfile.groupby("time.season").count()
     val = group_count.max(dim=["x", "y"]).values
     date = group_count.season
@@ -148,7 +227,7 @@ def season_stat(xfile, var_name, out_path):
     out_fig = out_path + var_name + "_season_group_count.png"
     my_plot_point(df, ylabel, out_fig)
 
-    #SEASONAL GROUP MEAN
+    # SEASONAL GROUP MEAN
     group_mean = xfile.groupby("time.season").mean()
     val = group_mean.mean(dim=["x", "y"]).values
     date = group_mean.season
@@ -160,15 +239,15 @@ def season_stat(xfile, var_name, out_path):
     my_plot_point(df, ylabel, out_fig)
 
 
-
 def reproject(file, target_crs, out_dir):
-# file: the absolute (full) path to the file (tif) that we want to reproject
-# target crs: the crs that we want to convert to. -----> df.rio.crs 
-# out_dir: full path to the output directory
-        
+    # file: the absolute (full) path to the file (tif) that we want to reproject
+    # target crs: the crs that we want to convert to. -----> df.rio.crs
+    # out_dir: full path to the output directory
+
     f_name = os.path.basename(file)
-    #print(f_name)
+    # print(f_name)
     df = xr.open_rasterio(file)
-    tmp = df.rio.reproject(target_crs,resampling=Resampling.nearest)
-    tmp.rio.to_raster(out_dir+f_name)
-    #print(tmp.rio.crs)
+    tmp = df.rio.reproject(target_crs, resolution=30, resampling=Resampling.nearest)
+    tmp.rio.to_raster(out_dir + f_name)
+    # print(tmp.rio.crs)
+
