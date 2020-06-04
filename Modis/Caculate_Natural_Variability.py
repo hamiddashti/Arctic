@@ -10,9 +10,11 @@ import matplotlib.pyplot as plt
 # ----------- Prameteres and paths -----------------------------------
 
 in_dir = "F:\\MYD21A2\\outputs\\"
-out_dir = "F:\\MYD21A2\\outputs\\DeltaLST\\Natural_vs_LULC_LST\\"
+out_dir = (
+    "F:\\MYD21A2\\outputs\\DeltaLST\\Natural_vs_LULC_LST\\Annual_2003_2013\\"
+)
 
-nband = 10  # number of LUC classes in the analysis
+nband = 6  # number of LUC classes in the analysis
 year1 = 2003
 year2 = 2013
 # ---------------------------------------------------------------------
@@ -20,6 +22,7 @@ year2 = 2013
 # ---------------------------------------------------------------------
 #                              Functions
 # ---------------------------------------------------------------------
+
 
 def check_finite(x):
     # This fuction checks if there is any finite values in an array
@@ -54,19 +57,23 @@ def dist_matrix(x_size, y_size):
 
 # ------------------------------------------------------------------
 #                           Preprocessing
+# Calculate the delta LST and LUC
 # ------------------------------------------------------------------
 
 # open LST and LUC tiles
 annual_lst = xr.open_dataarray(in_dir + "LST\\lst_mean_annual.nc")
+
 luc2003 = xr.open_rasterio(
     in_dir
-    + "LULC\\PercentCover\\2003_PercentCover_ABoVE_LandCover_Simplified_Bh08v04.tif"
+    + "LULC\\PercentCover\\2003_percent_cover_ABoVE_LandCover_Simplified_Bh08v04_reclassify.tif"
 )
+
 luc2003 = luc2003.where(luc2003 != -9999)
+
 
 luc2013 = xr.open_rasterio(
     in_dir
-    + "LULC\\PercentCover\\2013_PercentCover_ABoVE_LandCover_Simplified_Bh08v04.tif"
+    + "LULC\\PercentCover\\2013_percent_cover_ABoVE_LandCover_Simplified_Bh08v04_reclassify.tif"
 )
 luc2013 = luc2013.where(luc2013 != -9999)
 
@@ -83,27 +90,39 @@ luc2013 = luc2013.rio.reproject_match(annual_lst)
 
 
 # Taking the difference in LST and LUC
-delta_luc = abs(luc2013 - luc2003)
+delta_abs_luc = abs(luc2013 - luc2003)
+delta_luc_loss_gain = luc2013 - luc2003
 delta_lst_total = annual_lst.sel(year=year2) - annual_lst.sel(year=year1)
+
 
 # In the original LUC dataset, when there is no class present the pixels where assigned 0. To avoid confusion
 # with pixels that that actually there was a class but it hasn't been changed (luc13-luc03 = 0)
 # we set the pixles that are zero in both years (non existance classes) to nan.
-tmp = xr.ufuncs.isnan(delta_luc.where((luc2003 == 0) & (luc2013 == 0)))
+tmp = xr.ufuncs.isnan(delta_abs_luc.where((luc2003 == 0) & (luc2013 == 0)))
+
 mask = tmp.where(tmp == True)
-luc_masked = delta_luc * mask
+
+delta_abs_luc = delta_abs_luc * mask
+delta_luc_loss_gain = delta_luc_loss_gain * mask
 
 # If any of 10 classes has been changed more than 1 percent we call that a changed pixels
 # so we don't use them to find the natural variability
-changed_pixels = luc_masked.where(luc_masked > 1)
+# True --> changed; False --> Not changed
+changed_pixels = delta_abs_luc.where(delta_abs_luc > 1)
 # changed_pixels_all_classes = (xr.ufuncs.isnan(changed_pixels)).astype('int')
 
 # Extracting pixels that have been changed
-Changed_pixels_mask = no_change(changed_pixels, "band")
-delta_lst_not_changed = delta_lst_total.where(Changed_pixels_mask == False)
-delta_lst_changed = delta_lst_total.where(Changed_pixels_mask == True)
-delta_luc_not_changed = luc_masked.where(Changed_pixels_mask == False)
-delta_luc_changed = luc_masked.where(Changed_pixels_mask == True)
+changed_pixels_mask = no_change(changed_pixels, "band")
+
+
+delta_lst_not_changed = delta_lst_total.where(changed_pixels_mask == False)
+delta_lst_changed = delta_lst_total.where(changed_pixels_mask == True)
+delta_abs_luc_not_changed = delta_abs_luc.where(changed_pixels_mask == False)
+delta_abs_luc_changed = delta_abs_luc.where(changed_pixels_mask == True)
+delta_luc_loss_gain_changed = delta_luc_loss_gain.where(changed_pixels_mask == True)
+delta_luc_loss_gain_not_changed = delta_luc_loss_gain.where(
+    changed_pixels_mask == False
+)
 
 """ -----------------------------------------------------------------------
                  Extracting the natural variability of LST
@@ -120,7 +139,7 @@ Best way to check it is to constantly checking the shape of arrays and see if
 they are correct in every step of the work. 
 ------------------------------------------------------------------------ """
 
-# To run the search window we pad the actual matrix with nan to count for 
+# To run the search window we pad the actual matrix with nan to count for
 # the pixels at the edge
 
 win_size = (
@@ -143,6 +162,24 @@ lst_val_not_changed_view = as_strided(
     lst_val_not_changed, view_shape, lst_val_not_changed.strides * 2
 )
 lst_val_not_changed_view = lst_val_not_changed_view.reshape((-1,) + sub_shape)
+lst_val_not_changed_view.shape
+"""
+try:
+    if (
+        lst_val_not_changed_view.shape[0]
+        != delta_lst_not_changed.shape[0] * delta_lst_not_changed.shape[1]
+    ):
+        raise ValueError("UGH")
+except (ValueError, IndexError):
+    print("The size of the stride is not equal to the size of the raster")
+    input()  # To let the user see the error message
+    # if you want to then exit the program
+    import sys
+
+    sys.exit(1)
+
+print("DONE")
+"""
 # --------------------------------------
 
 # --------------------------------------
@@ -159,47 +196,52 @@ lst_val_changed_view = as_strided(
     lst_val_changed, view_shape, lst_val_changed.strides * 2
 )
 lst_val_changed_view = lst_val_changed_view.reshape((-1,) + sub_shape)
+lst_val_changed_view.shape
 # --------------------------------------
 
 # --------------------------------------
-luc_val_not_changed = delta_luc_not_changed.values
+luc_val_not_changed = delta_abs_luc_not_changed.values
 luc_val_not_changed = np.pad(
     luc_val_not_changed,
     ((0, 0), (win_size_half, win_size_half), (win_size_half, win_size_half)),
     "constant",
     constant_values=np.nan,
 )
-sub_shape = (10, win_size, win_size)
+
+sub_shape = (nband, win_size, win_size)
 view_shape = tuple(np.subtract(luc_val_not_changed.shape, sub_shape) + 1) + sub_shape
 luc_val_not_changed_view = as_strided(
     luc_val_not_changed, view_shape, luc_val_not_changed.strides * 2
 )
 luc_val_not_changed_view = luc_val_not_changed_view.reshape((-1,) + sub_shape)
+luc_val_not_changed_view.shape
 # --------------------------------------
 
 # --------------------------------------
-luc_val_changed = delta_luc_changed.values
+luc_val_changed = delta_abs_luc_changed.values
 luc_val_changed = np.pad(
     luc_val_changed,
     ((0, 0), (win_size_half, win_size_half), (win_size_half, win_size_half)),
     "constant",
     constant_values=np.nan,
 )
-sub_shape = (10, win_size, win_size)
+sub_shape = (nband, win_size, win_size)
 view_shape = tuple(np.subtract(luc_val_changed.shape, sub_shape) + 1) + sub_shape
 luc_val_changed_view = as_strided(
     luc_val_changed, view_shape, luc_val_changed.strides * 2
 )
 luc_val_changed_view = luc_val_changed_view.reshape((-1,) + sub_shape)
+luc_val_changed_view.shape
 # --------------------------------------
 
-# Matrix of distance of each pixel from the central pixel used in inverse 
+# Matrix of distance of each pixel from the central pixel used in inverse
 # distance weighting in the next step
 dist_m = dist_matrix(win_size, win_size)
 
-
 delta_natural_variability = np.empty(len(lst_val_changed_view))
 delta_natural_variability[:] = np.nan
+
+print("\n ####### Calculating the natural variability ##########")
 for i in np.arange(0, len(lst_val_changed_view) - 1):
     print(i)
     # Each loops goes through each window
@@ -211,22 +253,20 @@ for i in np.arange(0, len(lst_val_changed_view) - 1):
     # If the center pixel of the window is nan (meaning there is no LULC change in that pixel) skip it
     if np.isnan(lst_changed_tmp[win_size_half, win_size_half]):
         continue
-       
 
     # if nan returns False, else returns True: This line tell us what classes exist (True values) in that central pixel
-    center_luc = (np.isfinite(luc_changed_tmp[:, win_size_half, win_size_half])).reshape(
-        nband, 1, 1
-    )
+    center_luc = (
+        np.isfinite(luc_changed_tmp[:, win_size_half, win_size_half])
+    ).reshape(nband, 1, 1)
 
     # This is all pixels where classes havent been changed and surrond the target pixel wirh classes changed
     other_luc = np.isfinite(luc_not_changed_tmp)
     mask = (center_luc == other_luc).all(
         axis=0
-    # True if the center center pixel have exact same classes  as the other classes in unchanged surronding areas
-    # False otherwise
+        # True if the center center pixel have exact same classes  as the other classes in unchanged surronding areas
+        # False otherwise
     )  # This mask is all pixels that have same class as the central pixel
 
-    
     lst_not_changed_tmp_masked = np.where(mask == True, lst_not_changed_tmp, np.nan)
     dist_mask = np.where(mask == True, dist_m, np.nan)
     dist_mask[win_size_half, win_size_half] = np.nan
@@ -243,17 +283,50 @@ delta_lst_nv = delta_lst_total.copy(data=delta_natural_variability)
 
 # ------------------------------------------------------------
 # Calulating the delta LST casusd by changes in LUC
-delta_lst_lulc = delta_lst_changed-delta_lst_nv
+delta_lst_lulc = delta_lst_changed - delta_lst_nv
 # ------------------------------------------------------------
 
 # Saving the results
-delta_lst_total.to_netcdf(out_dir+"delta_lst_total.nc")
-delta_lst_changed.to_netcdf(out_dir+"delta_lst_changed.nc")
-delta_lst_not_changed.to_netcdf(out_dir+"delta_lst_not_changed.nc")
-delta_luc_changed.to_netcdf(out_dir+"delta_luc_changed.nc")
-delta_luc_not_changed.to_netcdf(out_dir+"delta_luc_not_changed.nc")
-delta_lst_nv.to_netcdf(out_dir+"delta_lst_nv.nc")
-delta_lst_lulc.to_netcdf(out_dir+"delta_lst_lulc.nc")
+changed_pixels_mask.to_netcdf(out_dir + "changed_pixels_mask.nc")
+
+delta_lst_total.to_netcdf(out_dir + "delta_lst_total.nc")
+delta_lst_changed.to_netcdf(out_dir + "delta_lst_changed.nc")
+delta_lst_not_changed.to_netcdf(out_dir + "delta_lst_not_changed.nc")
+delta_lst_nv.to_netcdf(out_dir + "delta_lst_changed_nv_component.nc")
+delta_lst_lulc.to_netcdf(out_dir + "delta_lst_changed_lulc_component.nc")
+
+delta_abs_luc_changed.to_netcdf(out_dir + "delta_abs_luc_changed.nc")
+delta_abs_luc_not_changed.to_netcdf(out_dir + "delta_abs_luc_not_changed.nc")
+delta_luc_loss_gain_changed.to_netcdf(out_dir + "delta_luc_loss_gain_changed.nc")
+delta_luc_loss_gain_not_changed.to_netcdf(
+    out_dir + "delta_luc_loss_gain_not_changed.nc"
+)
+
+
+modis_functions.meshplot(
+    delta_lst_changed,
+    outname=out_dir + "delta_lst_changed.tif",
+    mode="presentation",
+    label="$\Delta$ $LST_{LULC}$($^{\circ}$C)",
+    title="Annual cooling/warming",
+)
+
+
+modis_functions.meshplot(
+    delta_lst_lulc,
+    outname=out_dir + "delta_lst_lulc.tif",
+    mode="presentation",
+    label="$\Delta$ $LST_{LULC}$($^{\circ}$C)",
+    title="Annual cooling/warming",
+)
+
+modis_functions.meshplot(
+    delta_lst_nv,
+    outname=out_dir + "delta_lst_nv.tif",
+    mode="presentation",
+    label="$\Delta$ $LST_{LULC}$($^{\circ}$C)",
+    title="Annual cooling/warming",
+)
 
 
 ###################     All Done !    #########################

@@ -1,113 +1,63 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 16 08:48:27 2019
-This code save all the images as gif format and then create animation from them, 
-Its good for visual change detection stuff
-
-The input should be a nc format
-
-@author: hamiddashti
-"""
-
-import os
 import xarray as xr
-import pandas as pd
-from matplotlib import pyplot as plt
-import geopandas as gpd
-import imageio
+import rioxarray
+import numpy as np
+import matplotlib.pyplot as plt
+import rasterio
+import imageio 
+import modis_functions
 
-import salem
+in_dir = "F:\\MYD21A2\\outputs\\"
+out_dir = "F:\\MYD21A2\\outputs\\DeltaLST\\Animation\\"
+class_nemes = [
+    "Evergreen Forest",
+    "Deciduous Forest",
+    "Shrubland",
+    "Herbaceous",
+    "Sparsely Vegetated",
+    "Barren",
+    "Fen",
+    "Bog",
+    "Shallows_Littoral",
+    "Water",
+]
 
+for i in np.arange(2003,2014):
+    print(i)
+    name = in_dir+'LULC\\PercentCover\\'+str(i)+'_PercentCover_ABoVE_LandCover_Simplified_Bh08v04.tif'
+    luc = xr.open_rasterio(name)
+    luc = luc.where(luc!= -9999)
+    tmp = luc.isel(band=[0,2,6])
+    plt.style.use('dark_background')
+    plt.rc("font", family="serif")
+    xr.plot.imshow(tmp,rgb='band',robust=True,figsize=(4, 3))
+    plt.xlabel('',fontsize=12)
+    plt.ylabel('',fontsize=12)
+    plt.title(str(i),fontsize=14)
+    plt.savefig(out_dir+'LUC_'+str(i)+'.tif')
 
-os.chdir('P:\\nasa_above\\working\\modis_analyses')
-    # Read the nc file as xarray DataSet
-ds = xr.open_dataset('GIMMS3g_LAI_Bimonthly_2000_2010_60min.nc')
+image_list = []
+for i in np.arange(2003,2014):
+    f = out_dir+'LUC_'+str(i)+'.tif'
+    image_list.append(imageio.imread(f))
 
- 
-dates=pd.date_range(start='1/1/2000', end='12/31/2010',periods=264)
-ds['time']=dates
-ds=ds*0.1
-ds=ds.sel(lat=slice(75,45),lon=slice(-162,-51))
+imageio.mimwrite(out_dir+'animated_LUC.gif', image_list,fps=2)
 
+# -------------------------------------------------------
+df = xr.open_dataarray(in_dir+'LST\\lst_mean_annual.nc')
 
-ds_ymax = ds.resample(time='AS').max()
-
-ds_mean = ds_ymax.mean(dim='time')
-ds_std = ds_ymax.std(dim='time')
-
-test=(ds_ymax-ds_mean)/ds_std
-
-test = test.rename({'LAI':'z_score'})
-
-year = test.time.dt.year
-year = year.values
-
-
-n=test.time.size
-for i in range(n):
-    im = test.z_score[i,:,:].plot(cmap ='PiYG' ,figsize=(20,10),add_colorbar=False)
-    cb = plt.colorbar(im, orientation="vertical", pad=0.05)
-    cb.set_label(label='Z Score', size='large', weight='bold')
-    cb.ax.tick_params(labelsize='large')
-    plt.rc('xtick',labelsize=18)
-    plt.rc('ytick',labelsize=18)
-    plt.title('Year: '+str(year[i]),fontsize=18)
-    plt.xlabel('Longitude [degree_east]', fontsize=18)
-    plt.ylabel('Latitude [degree_north]', fontsize=16)
-    #plt.show()
-    plt.savefig(f"animation_lai2/LAI_frame_{i}.png")
-    plt.close()
- 
-    
-
-images = []
-for i in range(n):
-    images.append(imageio.imread('animation_lai2/LAI_frame_'+str(i)+'.png'))
-
-
-imageio.mimsave('animation_lai2/LAI_animation.gif', images,duration=4)
+#year=2003
+for year in np.arange(2003,2014):
+    df.sel(year=year).plot()
+    outname = out_dir+'LST_'+str(year)+'.tif'
+    modis_functions.meshplot(df.sel(year=year),outname = outname,mode='presentation',label="LST ($^{\circ}$C)",title = str(year))
 
 
+image_list = []
+for i in np.arange(2003,2014):
+    f = out_dir+'LST_'+str(i)+'.png'
+    image_list.append(imageio.imread(f))
 
+imageio.mimwrite(out_dir+'animated_LST.gif', image_list,fps=2)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+from importlib import reload
+reload(modis_functions)
