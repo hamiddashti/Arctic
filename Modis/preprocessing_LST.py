@@ -1,43 +1,75 @@
 import xarray as xr
-import rioxarray
-import numpy as np
-import pandas as pd
 import time
-import matplotlib.pyplot as plt
+# import rioxarray
+#import numpy as np
+#import pandas as pd
+# import matplotlib.pyplot as plt
 import modis_functions
 
-init_time = time.time()
-
-
-in_dir = 'F:\\MYD21A2\\'
-out_dir = 'F:\\MYD21A2\\outputs\\LST\\'
-
-
-print('--------- Filtering the LST data based on the quality flag) ----------\n')
+#init_time = time.time()
+#from dask.distributed import Client
+#client = Client(n_workers=2, threads_per_worker=2, memory_limit='1GB')
+#client
 t1 = time.time()
-lst_day = xr.open_dataarray(in_dir+'LST_Day_0804.nc',chunks=({'y': 272, 'x': 731}))
-lst_day_qc = xr.open_dataarray(in_dir+'QC_Day_0804.nc',chunks=({'y': 272, 'x': 731}))
-lst_night = xr.open_dataarray(in_dir+'LST_Night_0804.nc',chunks=({'y': 272, 'x': 731}))
-lst_night_qc = xr.open_dataarray(in_dir+'QC_Night_0804.nc',chunks=({'y': 272, 'x': 731}))
+in_dir = '/xdisk/davidjpmoore/hamiddashti/data/LST/'
+out_dir = '/xdisk/davidjpmoore/hamiddashti/data/LST/'
+
+#print('--------- Filtering the LST data based on the quality flag) ----------\n')
+
+chunks=({'time':10,'lat': 2692, 'lon': 8089})
+"""
+lst_day_ds = xr.open_dataset(in_dir+'MYD_LST_Day.nc',chunks=chunks)
+lst_day = lst_day_ds['LST_Day_1KM']
+lst_day_qc = lst_day_ds['QC_Day']
+lst_night_ds = xr.open_dataset(in_dir+'MYD_LST_Night.nc',chunks=chunks)
+lst_night = lst_night_ds['LST_Night_1KM']
+lst_night_qc = lst_night_ds['QC_Night']
 
 # These numbers comes from the quality flag file that comes with MYD21A3
 lst_day_night_flag = [160, 161, 164, 165, 176, 177, 180, 181, 224, 225, 240, 245]
 
 # Filtering
-lst_day_filtered = lst_day.where(lst_day_qc.isin(lst_day_night_flag))*0.02
-lst_night_filtered = lst_night.where(lst_night_qc.isin(lst_day_night_flag))*0.02
-tmp_df = xr.concat([lst_day_filtered, lst_night_filtered],'Average')
+print('Filtering day LST and saving')
+lst_day_filtered = lst_day.where(lst_day_qc.isin(lst_day_night_flag))
+lst_day_filtered.to_netcdf(out_dir+'lst_day_filtered.nc')
+t2 = time.time()
+print(f'total time={t2-t1}')
+print('Filtering night LST')
+lst_night_filtered = lst_night.where(lst_night_qc.isin(lst_day_night_flag))
+lst_night_filtered.to_netcdf(out_dir+'lst_night_filtered.nc')
+print("All Done!")
 
-# Note here that we DO NOT skip the NA values. So we set the mean as NA if either of day or night is NA
-lst_mean_filtered = tmp_df.mean('Average',skipna = False) 
-# saving the results to the disk
-lst_day_filtered.to_netcdf(out_dir+'LST_Day_filtered.nc')
-lst_night_filtered.to_netcdf(out_dir+'LST_Night_filtered.nc')
+lst_day_filtered = xr.open_dataarray(in_dir+'lst_day_filtered.nc',chunks=chunks)
+lst_night_filtered = xr.open_dataarray(in_dir+'lst_night_filtered.nc',chunks=chunks)
+
+#lst_day_tmp = lst_day_filtered.fillna(0)
+#lst_night_tmp = lst_night_filtered.fillna(0)
+
+lst_mean_filtered = (lst_day_filtered+lst_night_filtered)/2
+print('###### Saving the mean #####')
 lst_mean_filtered.to_netcdf(out_dir+'lst_mean_filtered.nc')
 
 t2 = time.time()
-print(f'--------- Filtering Done: {(t2-t1)/60} minutes ---------------------\n\n')
+print(f'--------- Taking the mean is done: {(t2-t1)/60} minutes ---------------------\n\n')
 
+"""
+print('------------- Group by year ------------------------------------------------\n')
+t1 = time.time()
+
+lst_mean_filtered = xr.open_dataarray(in_dir+'lst_mean_filtered.nc',chunks=chunks)
+lst_day_filtered = xr.open_dataarray(in_dir+'lst_day_filtered.nc',chunks=chunks)
+lst_night_filtered = xr.open_dataarray(in_dir+'lst_night_filtered.nc',chunks=chunks)
+
+lst_day_annual = lst_day_filtered.groupby('time.year').mean(dim='time')
+lst_night_annual = lst_night_filtered.groupby('time.year').mean(dim='time')
+lst_mean_annual = lst_mean_filtered.groupby('time.year').mean(dim='time')
+
+lst_day_annual.to_netcdf(out_dir+'lst_day_annual.nc')
+lst_night_annual.to_netcdf(out_dir+'lst_night_annual.nc')
+lst_mean_annual.to_netcdf(out_dir+'lst_mean_annual.nc')
+
+t2 = time.time()
+print(f"------------ Finished annual mean: {t2-t1} --------------------------------\n")
 
 print('---------- Growing season (April-October)------------------------------\n')
 # Taking the mean of the LST data from April to October. Selection of the month is just beacuse
@@ -51,7 +83,6 @@ lst_night_growing = modis_functions.growing_season(lst_night_filtered)
 # precise if we use the lst_mean_filtered, beacuse we count for all NAs in day and night original LST
 lst_mean_growing = modis_functions.growing_season(lst_mean_filtered)
 
-#Saving 
 lst_day_growing.to_netcdf(out_dir+'lst_day_growing.nc')
 lst_night_growing.to_netcdf(out_dir+'lst_night_growing.nc')
 lst_mean_growing.to_netcdf(out_dir+'lst_mean_growing.nc')
@@ -115,18 +146,5 @@ lst_mean_season_group.to_netcdf(out_dir + "lst_mean_season_group.nc")
 t2 = time.time()
 print(f"------------ Finished seasonal group: {t2-t1}------------------------------\n")
 
-print('------------- Group by year ------------------------------------------------\n')
-t1 = time.time()
-lst_day_annual = lst_day_filtered.groupby('time.year').mean(dim='time')
-lst_night_annual = lst_night_filtered.groupby('time.year').mean(dim='time')
-lst_mean_annual = lst_mean_filtered.groupby('time.year').mean(dim='time')
 
-lst_day_annual.to_netcdf(out_dir+'lst_day_annual.nc')
-lst_night_annual.to_netcdf(out_dir+'lst_night_annual.nc')
-lst_mean_annual.to_netcdf(out_dir+'lst_mean_annual.nc')
-
-t2 = time.time()
-print(f"------------ Finished annual mean: {t2-t1} --------------------------------\n")
-
-end_time = time.time()
 print(f"############ ALL DONE!----> {(end_time-init_time)/60} minutes ###############")
