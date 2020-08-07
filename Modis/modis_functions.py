@@ -511,7 +511,6 @@ def mosaicing(out_dir, fnames, out_name,nodata):
 		src = rasterio.open(f)
 		src_files_to_mosaic.append(src)
 	mosaic, out_trans = merge(src_files_to_mosaic, nodata=nodata)
-	mosaic[mosaic==0] = np.nan
 	out_meta = src.meta.copy()
 	out_meta.update(
 		{
@@ -697,4 +696,194 @@ def lst_luc_plot(
 	df["r_value"] = est_rvalue
 	df["std_err"] = est_std_error
 	return df
+
+def argmax(x):
+	import numpy as np
+	if np.isnan(x).all():
+		return np.nan
+	else:
+		return max(range(len(x)), key=lambda y: x[y])
+
+
+
+def class_to_what(x,CType,idx):
+	import numpy as np
+	if CType == 'EF':
+		n=[]
+		exceptions = 0 #Excluding EF from the conversion type
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==1:
+					n=2 			# EF to DF
+				elif I[0]==2:
+					n=3 			# EF to shrub
+				elif I[0]==3:
+					n=4			# EF to Herbacuous
+				elif I[0]==4:
+					n=5			# EF to Sparse/Barren
+				elif I[0]==5:
+					n=6			# EF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+
+	elif CType == 'DF':
+		n=[]
+		exceptions = 1 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1			# DF to EF
+				elif I[0]==2:
+					n=3		# DF to shrub
+				elif I[0]==3:
+					n=4		# DF to Herbasuous
+				elif I[0]==4:
+					n=5		# DF to Sparse/Barren
+				elif I[0]==5:
+					n=6		# DF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	elif CType == 'shrub':
+		n=[]
+		exceptions = 2 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1			# DF to EF
+				elif I[0]==1:
+					n=2		# DF to shrub
+				elif I[0]==3:
+					n=4		# DF to Herbasuous
+				elif I[0]==4:
+					n=5		# DF to Sparse/Barren
+				elif I[0]==5:
+					n=6		# DF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	elif CType == 'herb':
+		n=[]
+		exceptions = 3 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1		# DF to EF
+				elif I[0]==1:
+					n=2		# DF to shrub
+				elif I[0]==2:
+					n=3		# DF to Herbasuous
+				elif I[0]==4:
+					n=5		# DF to Sparse/Barren
+				elif I[0]==5:
+					n=6		# DF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	elif CType == 'sparse':
+		n=[]
+		exceptions = 4 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1			# DF to EF
+				elif I[0]==1:
+					n=2		# DF to shrub
+				elif I[0]==2:
+					n=3		# DF to Herbasuous
+				elif I[0]==3:
+					n=4		# DF to Sparse/Barren
+				elif I[0]==5:
+					n=6		# DF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	elif CType == 'wetland':
+		n=[]
+		exceptions = 5 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1			# DF to EF
+				elif I[0]==1:
+					n=2		# DF to shrub
+				elif I[0]==2:
+					n=3		# DF to Herbasuous
+				elif I[0]==3:
+					n=4		# DF to Sparse/Barren
+				elif I[0]==4:
+					n=5		# DF to wetlands
+				elif I[0]==6:
+					n=7			# EF to water
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	elif CType == 'water':
+		n=[]
+		exceptions = 6 #Index of the class to be studied for change
+		if (x[exceptions]<-50):
+			max1 = np.nanmax(np.delete(x, exceptions))
+			#max1 = x[a1[a2]] 
+			if (abs(x[idx-1])-abs(max1))<10:
+				I = np.where(x==max1)
+				if I[0]==0:
+					n=1			# DF to EF
+				elif I[0]==1:
+					n=2		# DF to shrub
+				elif I[0]==2:
+					n=3		# DF to Herbasuous
+				elif I[0]==3:
+					n=4		# DF to Sparse/Barren
+				elif I[0]==4:
+					n=5		# DF to wetlands
+				elif I[0]==5:
+					n=6		# DF to wetlands
+			else:
+				n=np.nan
+		else:
+			n=np.nan
+		return n
+	else:
+		print('No class provided')
 
