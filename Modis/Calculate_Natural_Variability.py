@@ -6,7 +6,7 @@ import pandas as pd
 # import modis_functions
 from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
-
+from config import config_paths
 
 # ---------------------------------------------------------------------
 #                              Functions
@@ -79,8 +79,10 @@ def window_view(data, win_size, type):
 # 		Prameteres and paths 
 # -----------------------------------------------------------------
 #in_dir = "F:\\working\\LUC\\"
-in_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/Annual/'
-out_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Natural_Variability_Annual_outputs/Test/'
+
+in_dir = config_paths['in_dir']
+out_dir = config_paths['out_dir']
+
 #out_dir = "F:\\working\\LUC\\test\\"
 nband = 7  # number of LUC classes in the analysis
 years = range(2003,2015)
@@ -93,7 +95,7 @@ win_size_half = int(np.floor(win_size / 2))
 	# distance weighting in the next step
 dist_m = dist_matrix(win_size, win_size)
 
-annual_lst = xr.open_dataarray(in_dir + "Data/Annual/Annual_LST/lst_mean_annual.nc")
+annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
 annual_lst = annual_lst.rename({"lat": "y", "lon": "x"})
 annual_lst = annual_lst - 273.15
 luc = xr.open_dataarray(in_dir + "LULC_2003_2014.nc")
