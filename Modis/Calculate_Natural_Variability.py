@@ -1,7 +1,8 @@
 import xarray as xr
 import rioxarray
 import numpy as np
-
+import glob
+import pandas as pd
 # import modis_functions
 from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
@@ -19,13 +20,13 @@ def check_finite(x):
         # return nan if there is nan (it has been changed)
         return True
     else:
-        # return 1 if there ls no nan which means no change in LULC
+        # return 1 if there is no nan which means no change in LULC
         return False
 
 
 def no_change(xrd, dim):
     # This function uses the check_finite and highlights the pixels where pixels
-    # LULC chaged.
+    # LULC changed.
     return xr.apply_ufunc(
         check_finite, xrd, input_core_dims=[[dim]], dask="allowed", vectorize=True,
     )
@@ -75,14 +76,14 @@ def window_view(data, win_size, type):
 
 
 # -----------------------------------------------------------------
-# 						Prameteres and paths 
+# 		Prameteres and paths 
 # -----------------------------------------------------------------
 #in_dir = "F:\\working\\LUC\\"
-in_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/LULC_Maximum_Change_Analyses/'
-out_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/LULC_Maximum_Change_Analyses/Natural_Variability_outputs/'
-#out_dir = "F:\\working\\LUC\\Final_Natural_Variability_Analysis\\"
+in_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/Annual/'
+out_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Natural_Variability_Annual_outputs/Test/'
+#out_dir = "F:\\working\\LUC\\test\\"
 nband = 7  # number of LUC classes in the analysis
-years = range(2004,2015)
+years = range(2003,2015)
 win_size = (
 		51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
 	)
@@ -92,22 +93,21 @@ win_size_half = int(np.floor(win_size / 2))
 	# distance weighting in the next step
 dist_m = dist_matrix(win_size, win_size)
 
-
+annual_lst = xr.open_dataarray(in_dir + "Data/Annual/Annual_LST/lst_mean_annual.nc")
+annual_lst = annual_lst.rename({"lat": "y", "lon": "x"})
+annual_lst = annual_lst - 273.15
+luc = xr.open_dataarray(in_dir + "LULC_2003_2014.nc")
 # ------------------------------------------------------------------
 #                           Preprocessing
 # Calculate the delta LST and LUC
 # ------------------------------------------------------------------
-
 for k in range(0,len(years)-1):
 	year1 = years[k] 
 	year2 = years[k+1]
 	print(year2)
 	# open LST and LUC tiles
-	annual_lst = xr.open_dataarray(in_dir + "Annual_LST/lst_mean_annual.nc")
-	annual_lst = annual_lst.rename({"lat": "y", "lon": "x"})
-	annual_lst = annual_lst - 273.15
 
-	luc = xr.open_dataarray(in_dir + "LULC_2003_2014.nc")
+	
 
 	luc_year1 = luc.sel(year=year1)
 	luc_year2 = luc.sel(year=year2)
@@ -124,30 +124,32 @@ for k in range(0,len(years)-1):
 
 
 	# In the original LUC dataset, when there is no class present the pixels where assigned 0. To avoid confusion
-	# with pixels that that actually there was a class but it hasn't been changed (luc13-luc03 = 0)
-	# we set the pixles that are zero in both years (non existance classes) to nan.
+	# with pixels that that actually there was a class but it hasn't been changed (e.g.luc2006-luc2005 = 0)
+	# we set the pixle values that are zero in both years (non existance classes) to nan.
 	tmp = xr.ufuncs.isnan(delta_abs_luc.where((luc_year1 == 0) & (luc_year2 == 0)))
+	# To convert tmp from True/False to one/zero
 	mask = tmp.where(tmp == True)
 	delta_abs_luc = delta_abs_luc * mask
 	delta_luc_loss_gain = delta_luc_loss_gain * mask
 
-	# If any of 10 classes has been changed more than 1 percent we call that a changed pixels
+	# If any of 7 classes has been changed more than 1 percent we call that a changed pixels
 	# so we don't use them to find the natural variability
-	# True --> not changed; False --> changed
-	not_changed_pixels = delta_abs_luc.where(delta_abs_luc > 1)
-	# changed_pixels_all_classes = (xr.ufuncs.isnan(changed_pixels)).astype('int')
-
+	
+	changed_pixels = delta_abs_luc.where(delta_abs_luc > 1)
+	
+	
 	# Extracting pixels that have been changed
-	not_changed_pixels_mask = no_change(not_changed_pixels, "band")
+	# True --> changed; False --> not changed
+	changed_pixels_mask = no_change(changed_pixels, "band")
 
 
-	delta_lst_not_changed = delta_lst_total.where(not_changed_pixels_mask == False)
-	delta_lst_changed = delta_lst_total.where(not_changed_pixels_mask == True)
-	delta_abs_luc_not_changed = delta_abs_luc.where(not_changed_pixels_mask == False)
-	delta_abs_luc_changed = delta_abs_luc.where(not_changed_pixels_mask == True)
-	delta_luc_loss_gain_changed = delta_luc_loss_gain.where(not_changed_pixels_mask == True)
+	delta_lst_not_changed = delta_lst_total.where(changed_pixels_mask == False)
+	delta_lst_changed = delta_lst_total.where(changed_pixels_mask == True)
+	delta_abs_luc_not_changed = delta_abs_luc.where(changed_pixels_mask == False)
+	delta_abs_luc_changed = delta_abs_luc.where(changed_pixels_mask == True)
+	delta_luc_loss_gain_changed = delta_luc_loss_gain.where(changed_pixels_mask == True)
 	delta_luc_loss_gain_not_changed = delta_luc_loss_gain.where(
-		not_changed_pixels_mask == False
+		changed_pixels_mask == False
 	)
 
 	
@@ -241,7 +243,7 @@ for k in range(0,len(years)-1):
 	# ------------------------------------------------------------
 
 	# Savinng the results
-	not_changed_pixels_mask.to_netcdf(out_dir + "changed_pixels_mask_"+str(year2)+".nc")
+	changed_pixels_mask.to_netcdf(out_dir + "changed_pixels_mask_"+str(year2)+".nc")
 	delta_lst_total.to_netcdf(out_dir+ "delta_lst_total_"+str(year2)+".nc")
 	delta_lst_changed.to_netcdf(out_dir + "delta_lst_changed_"+str(year2)+".nc")
 	delta_lst_not_changed.to_netcdf(out_dir + "delta_lst_not_changed_"+str(year2)+".nc")
@@ -254,5 +256,88 @@ for k in range(0,len(years)-1):
 	delta_luc_loss_gain_not_changed.to_netcdf(
 		out_dir + "delta_luc_loss_gain_not_changed_"+str(year2)+".nc"
 	)
+
+
+years = pd.date_range(start="2004",end="2015",freq="A").year
+
+fname_changed_pixels_mask = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'changed_pixels_mask_' + str(years[i]) + '.nc'
+	fname_changed_pixels_mask.append(tmp)
+changed_pixels_mask_concat = xr.concat([xr.open_dataarray(f) for f in fname_changed_pixels_mask], dim=years)
+changed_pixels_mask_concat=changed_pixels_mask_concat.rename({'concat_dim':'year'})
+changed_pixels_mask_concat.to_netcdf(out_dir+'changed_pixels_mask_concat.nc')
+
+fname_delta_lst_total = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_lst_total_'+str(years[i]) + '.nc'
+	fname_delta_lst_total.append(tmp)
+delta_lst_total_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_lst_total], dim=years)
+delta_lst_total_concat=delta_lst_total_concat.rename({'concat_dim':'year'})
+delta_lst_total_concat.to_netcdf(out_dir+'delta_lst_total_concat.nc')
+
+fname_delta_lst_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_lst_changed_'+str(years[i]) + '.nc'
+	fname_delta_lst_changed.append(tmp)
+delta_lst_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_lst_changed], dim=years)
+delta_lst_changed_concat=delta_lst_changed_concat.rename({'concat_dim':'year'})
+delta_lst_changed_concat.to_netcdf(out_dir+'delta_lst_changed_concat.nc')
+
+fname_delta_lst_not_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_lst_not_changed_'+str(years[i]) + '.nc'
+	fname_delta_lst_not_changed.append(tmp)
+delta_lst_not_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_lst_not_changed], dim=years)
+delta_lst_not_changed_concat=delta_lst_not_changed_concat.rename({'concat_dim':'year'})
+delta_lst_not_changed_concat.to_netcdf(out_dir+'delta_lst_not_changed_concat.nc')
+
+fname_delta_lst_changed_nv_component = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_lst_changed_nv_component_'+str(years[i]) + '.nc'
+	fname_delta_lst_changed_nv_component.append(tmp)
+delta_lst_changed_nv_component_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_lst_changed_nv_component], dim=years)
+delta_lst_changed_nv_component_concat= delta_lst_changed_nv_component_concat.rename({'concat_dim':'year'})
+delta_lst_changed_nv_component_concat.to_netcdf(out_dir+'delta_lst_changed_nv_component_concat.nc')
+
+fname_delta_lst_changed_lulc_component = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_lst_changed_lulc_component_'+str(years[i]) + '.nc'
+	fname_delta_lst_changed_lulc_component.append(tmp)
+delta_lst_changed_lulc_component_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_lst_changed_lulc_component], dim=years)
+delta_lst_changed_lulc_component_concat = delta_lst_changed_lulc_component_concat.rename({'concat_dim':'year'})
+delta_lst_changed_lulc_component_concat.to_netcdf(out_dir+'delta_lst_changed_lulc_component_concat.nc')
+
+fname_delta_abs_luc_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_abs_luc_changed_'+str(years[i]) + '.nc'
+	fname_delta_abs_luc_changed.append(tmp)
+delta_abs_luc_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_abs_luc_changed], dim=years)
+delta_abs_luc_changed_concat=delta_abs_luc_changed_concat.rename({'concat_dim':'year'})
+delta_abs_luc_changed_concat.to_netcdf(out_dir+'delta_abs_luc_changed_concat.nc')
+
+fname_delta_abs_luc_not_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir +  'delta_abs_luc_not_changed_'+str(years[i]) + '.nc'
+	fname_delta_abs_luc_not_changed.append(tmp)
+delta_abs_luc_not_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_abs_luc_not_changed], dim=years)
+delta_abs_luc_not_changed_concat=delta_abs_luc_not_changed_concat.rename({'concat_dim':'year'})
+delta_abs_luc_not_changed_concat.to_netcdf(out_dir+'delta_abs_luc_not_changed_concat.nc')
+
+fname_delta_luc_loss_gain_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir +'delta_luc_loss_gain_changed_'+str(years[i]) + '.nc'
+	fname_delta_luc_loss_gain_changed.append(tmp)
+delta_luc_loss_gain_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_luc_loss_gain_changed], dim=years)
+delta_luc_loss_gain_changed_concat = delta_luc_loss_gain_changed_concat.rename({'concat_dim':'year'})
+delta_luc_loss_gain_changed_concat.to_netcdf(out_dir+'delta_luc_loss_gain_changed_concat.nc')
+
+fname_delta_luc_loss_gain_not_changed = []
+for i in range(0,len(years)):
+	tmp = out_dir + 'delta_luc_loss_gain_not_changed_'+str(years[i]) + '.nc'
+	fname_delta_luc_loss_gain_not_changed.append(tmp)
+delta_luc_loss_gain_not_changed_concat = xr.concat([xr.open_dataarray(f) for f in fname_delta_luc_loss_gain_not_changed], dim=years)
+delta_luc_loss_gain_not_changed_concat=delta_luc_loss_gain_not_changed_concat.rename({'concat_dim':'year'})
+delta_luc_loss_gain_not_changed_concat.to_netcdf(out_dir+'delta_luc_loss_gain_not_changed_concat.nc')
 
 ###################     All Done !    #########################
