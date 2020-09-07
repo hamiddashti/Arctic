@@ -6,7 +6,7 @@ import pandas as pd
 # import modis_functions
 from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
-from config import config_paths
+#from config import config_paths
 
 # ---------------------------------------------------------------------
 #                              Functions
@@ -78,14 +78,16 @@ def window_view(data, win_size, type):
 # -----------------------------------------------------------------
 # 		Prameteres and paths 
 # -----------------------------------------------------------------
-#in_dir = "F:\\working\\LUC\\"
+# in_dir = "F:\\working\\LUC\\Data\\"
+# out_dir = "F:\\working\\LUC\\test\\"
+in_dir = 'P:\nasa_above\working\modis_analyses\'
+out_dir = 'P:\nasa_above\working\modis_analyses\Test\'
+#in_dir = config_paths['in_dir']
+#out_dir = config_paths['out_dir']
 
-in_dir = config_paths['in_dir']
-out_dir = config_paths['out_dir']
 
-#out_dir = "F:\\working\\LUC\\test\\"
 nband = 7  # number of LUC classes in the analysis
-years = range(2003,2015)
+years = range(2003,2004)
 win_size = (
 		51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
 	)
@@ -95,9 +97,10 @@ win_size_half = int(np.floor(win_size / 2))
 	# distance weighting in the next step
 dist_m = dist_matrix(win_size, win_size)
 
-annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
-annual_lst = annual_lst.rename({"lat": "y", "lon": "x"})
-annual_lst = annual_lst - 273.15
+#annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
+LST = xr.open_dataarray(in_dir+'Annual\\Annual_LST\\lst_mean_annual.nc')
+LST = LST.rename({"lat": "y", "lon": "x"})
+LST = LST - 273.15
 luc = xr.open_dataarray(in_dir + "LULC_2003_2014.nc")
 # ------------------------------------------------------------------
 #                           Preprocessing
@@ -122,9 +125,9 @@ for k in range(0,len(years)-1):
 	# Taking the difference in LST and LUC
 	delta_abs_luc = abs(luc_year2 - luc_year1)
 	delta_luc_loss_gain = luc_year2 - luc_year1
-	delta_lst_total = annual_lst.sel(year=year2) - annual_lst.sel(year=year1)
-
-
+	delta_lst_total = LST.sel(year=year2) - LST.sel(year=year1)
+	print(delta_lst_total)
+	exit()
 	# In the original LUC dataset, when there is no class present the pixels where assigned 0. To avoid confusion
 	# with pixels that that actually there was a class but it hasn't been changed (e.g.luc2006-luc2005 = 0)
 	# we set the pixle values that are zero in both years (non existance classes) to nan.
