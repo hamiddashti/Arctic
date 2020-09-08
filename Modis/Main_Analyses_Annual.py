@@ -7,52 +7,69 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
-#import glob
+
+# import glob
 
 # in_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/LULC_Maximum_Change_Analyses/'
-in_dir = "F:\\working\\LUC\\"
-out_dir = "F:\\working\\LUC\\outputs\\"
-fig_dir = out_dir + "Figures\\Annual\\"
+in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
+out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Test/"
+fig_dir = out_dir + "Figures/Annual/"
 
 # This is a netcdf file that shows all the extreme conversions calculated using the "Max_Change_Analyses.py"
-conversions = xr.open_dataarray("conversions.nc")
+conversions = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions.nc"
+)
 
 # Summing the conversion over the year dimension
-conversions.sum("year")
+print(conversions.sum("year"))
 
-# The year 2007 is an arbitarary year to extract ET/LST/Albedo of a changed and nearby unchanged pixel (for the presentations only)
-conversions.sel(year=2007)
 
 # Calling the results of the Max_Changed_Analyses.py
-EF = xr.open_dataarray(in_dir + "LUC_max_conversions\\EF_to_other.nc")
-shrub = xr.open_dataarray(in_dir + "LUC_max_conversions\\shrub_to_other.nc")
-herb = xr.open_dataarray(in_dir + "LUC_max_conversions\\herb_to_other.nc")
-sparse = xr.open_dataarray(in_dir + "LUC_max_conversions\\sparse_to_other.nc")
-wetland = xr.open_dataarray(in_dir + "LUC_max_conversions\\wetland_to_other.nc")
-water = xr.open_dataarray(in_dir + "LUC_max_conversions\\water_to_other.nc")
-DF = xr.open_dataarray(in_dir + "LUC_max_conversions/DF_to_other.nc")
+EF = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/EF_to_other.nc"
+)
+shrub = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/shrub_to_other.nc"
+)
+herb = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/herb_to_other.nc"
+)
+sparse = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/sparse_to_other.nc"
+)
+wetland = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/wetland_to_other.nc"
+)
+water = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/water_to_other.nc"
+)
+DF = xr.open_dataarray(
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/DF_to_other.nc"
+)
+
+# The year DF_2007 is just two aribitraty pixels to show the changes between changed and unchaneged pixels (for presentation purposes)
 DF_2007 = DF.sel(year=2007)
 # DF_2007.to_netcdf('DF_2007.nc')
 
 # importing LST (natural and LUC components)
-lst_lulc = xr.open_dataarray(in_dir + "Annual_LST/delta_lst_changed_lulc_component.nc")
-lst_nv = xr.open_dataarray(in_dir + "Annual_LST/delta_lst_changed_nv_component.nc")
-lst_diff_total = xr.open_dataarray(in_dir + "Annual_LST/delta_lst_total.nc")
-lst = xr.open_dataarray(in_dir + "Annual_LST/lst_mean_annual.nc") - 273.15
+lst_lulc = xr.open_dataarray(in_dir + "Natural_Variability_Annual_outputs/delta_lst_changed_lulc_component.nc")
+lst_nv = xr.open_dataarray(in_dir + "Natural_Variability_Annual_outputs/delta_lst_changed_nv_component.nc")
+lst_diff_total = xr.open_dataarray(in_dir + "Natural_Variability_Annual_outputs/delta_lst_total.nc")
+lst = xr.open_dataarray(in_dir + "Data/Annual/Annual_LST/lst_mean_annual.nc") - 273.15
 lst = lst.sel(year=slice("2003", "2014"))
 lst = lst.rename({"lat": "y", "lon": "x"})
 
 # Importing Albedo and taking the temporal difference
-albedo = xr.open_dataarray(in_dir + "Annual_Albedo/Albedo_annual.nc")
+albedo = xr.open_dataarray(in_dir + "Data/Annual/Annual_Albedo/Albedo_annual.nc")
 albedo = albedo.sel(year=slice("2003", "2014"))
 albedo_diff = albedo.diff("year")
 
 # Importing ET and taking the temporal difference
-EC = xr.open_dataarray(in_dir + "Annual_ET/EC.nc")
-EI = xr.open_dataarray(in_dir + "Annual_ET/EI.nc")
-ES = xr.open_dataarray(in_dir + "Annual_ET/ES.nc")
-EW = xr.open_dataarray(in_dir + "Annual_ET/EW.nc")
-ET = xr.open_dataarray(in_dir + "Annual_ET/ET.nc")
+EC = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/EC.nc")
+EI = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/EI.nc")
+ES = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/ES.nc")
+EW = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/EW.nc")
+ET = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/ET.nc")
 EC_diff = EC.diff("year")
 EI_diff = EI.diff("year")
 ES_diff = ES.diff("year")
@@ -62,17 +79,17 @@ ET_diff = ET.diff("year")
 
 # This is the map of water_energy limited areas
 WL_EL = xr.open_dataarray(
-    in_dir + "\\Water_Energy_Limited\\Tif\\WE_5classes_reprojected.nc"
+    in_dir + "Data/Water_Energy_Limited/Tif/WE_5classes_reprojected.nc"
 )
 
 
 def find_coord(da, val, n):
     """
-	Find a specific value in xarray object and returns its coordinate
-	da --> xarray object
-	val --> interested values to be find in da
-	n --> index of a number if there are multiple of replicate of the val
-	"""
+    Find a specific value in xarray object and returns its coordinate
+    da --> xarray object
+    val --> interested values to be find in da
+    n --> index of a number if there are multiple of replicate of the val
+    """
     tmp = da.where(da == val, drop=True)
     tmp_stack = tmp.stack(z=["x", "y"])
     a = tmp_stack[tmp_stack.notnull()][n]
@@ -92,7 +109,7 @@ def plot_example(changed, not_changed, var, outname):
     plt.ylabel(var)
     plt.legend(["LUC changed", "LUC not changed"])
     plt.savefig(fig_dir + outname)
-    plt.show()
+    plt.close()
 
 
 def make_mask(data):
@@ -137,7 +154,6 @@ plot_example(
     albedo_changed, albedo_not_changed, "Albedo", outname="Albedo_DF_Herb_Example.png"
 )
 
-
 albedo_diff_changed = albedo_diff.sel(x=x_changed, y=y_changed, method="nearest")
 albedo_diff_not_changed = albedo_diff.sel(
     x=x_not_changed, y=y_not_changed, method="nearest"
@@ -148,7 +164,6 @@ plot_example(
     r"$\Delta$ Albedo",
     outname="Albedo_DF_Herb_trend_Example.png",
 )
-
 
 ET_changed = ET.sel(x=x_changed, y=y_changed, method="nearest")
 ET_not_changed = ET.sel(x=x_not_changed, y=y_not_changed, method="nearest")
@@ -169,15 +184,13 @@ plot_example(EI_changed, EI_not_changed, "EI [mm/year]", outname="EI.png")
 """ ---------------------------------------------------------------------
 Now lets do the same analyses for the entire region...
 ----------------------------------------------------------------------"""
-
-
 def extract_vals(orig_class, val, var, conv_name):
     """
-	var ---> Name of the varaibke we are interested to extract (lst/albedo/ET)
-	val ---> Name of the class after convrsion of the original class (orig_class)
-	orig_class --->  the xarray object of original class conversion from Max_Change_Anlyses.py
-	conv_name ---> conversion name
-	"""
+    var ---> Name of the varaibke we are interested to extract (lst/albedo/ET)
+    val ---> Name of the class after convrsion of the original class (orig_class)
+    orig_class --->  the xarray object of original class conversion from Max_Change_Anlyses.py
+    conv_name ---> conversion name
+    """
     import numpy as np
 
     if var == "lst":
@@ -219,30 +232,29 @@ def extract_vals(orig_class, val, var, conv_name):
 
 columns = [
     "EF_to_Shrub",
-    "EF_to_Herb",
+    #"EF_to_Herb",
     "EF_to_Sparse",
     # "DF_to_Shrub",
     "DF_to_Herb",
     "DF_to_Sparse",
     "Shrub_to_Sparse",
-    "Shrub_to_Wetland",
-    "Herb_to_Shrub",
+    #"Shrub_to_Wetland",
+    #"Herb_to_Shrub",
     "Herb_to_Sparse",
-    "Herb_to_Wetland",
+    #"Herb_to_Wetland",
     "Sparse_to_Shrub",
     "Sparse_to_Herb",
-    "Wetland_to_Sparse",
-    "Water_to_Sparse",
-    "Water_to_Wetland",
+    #"Wetland_to_Sparse",
+    #"Water_to_Sparse",
+    #"Water_to_Wetland",
 ]
-
 
 lst_EF_to_shrub = extract_vals(
     orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
 )
-lst_EF_to_herb = extract_vals(
-    orig_class=EF, val=4, var="lst", conv_name="lst_EF_to_herb"
-)
+# lst_EF_to_herb = extract_vals(
+#     orig_class=EF, val=4, var="lst", conv_name="lst_EF_to_herb"
+# )
 lst_EF_to_sparse = extract_vals(
     orig_class=EF, val=5, var="lst", conv_name="lst_EF_to_sparse"
 )
@@ -258,19 +270,19 @@ lst_DF_to_sparse = extract_vals(
 lst_shrub_to_sparse = extract_vals(
     orig_class=shrub, val=5, var="lst", conv_name="lst_shrub_to_sparse"
 )
-lst_shrub_to_wetland = extract_vals(
-    orig_class=shrub, val=6, var="lst", conv_name="lst_shrub_to_wetland"
-)
+# lst_shrub_to_wetland = extract_vals(
+#     orig_class=shrub, val=6, var="lst", conv_name="lst_shrub_to_wetland"
+# )
 
-lst_herb_to_shrub = extract_vals(
-    orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
-)
+# lst_herb_to_shrub = extract_vals(
+#     orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
+# )
 lst_herb_to_sparse = extract_vals(
     orig_class=herb, val=5, var="lst", conv_name="lst_herb_to_sparse"
 )
-lst_herb_to_wetland = extract_vals(
-    orig_class=herb, val=6, var="lst", conv_name="lst_herb_to_wetland"
-)
+# lst_herb_to_wetland = extract_vals(
+#     orig_class=herb, val=6, var="lst", conv_name="lst_herb_to_wetland"
+# )
 
 lst_sparse_to_shrub = extract_vals(
     orig_class=sparse, val=3, var="lst", conv_name="lst_sparse_to_shrub"
@@ -280,35 +292,35 @@ lst_sparse_to_herb = extract_vals(
 )
 # lst_sparse_to_water = extract_vals(orig_class=sparse,val= 7,var= "lst",conv_name= "lst_sparse_to_water")
 
-lst_wetland_to_sparse = extract_vals(
-    orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
-)
+# lst_wetland_to_sparse = extract_vals(
+#     orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
+# )
 
-lst_water_to_sparse = extract_vals(
-    orig_class=water, val=5, var="lst", conv_name="lst_water_to_sparse"
-)
-lst_water_to_wetland = extract_vals(
-    orig_class=water, val=6, var="lst", conv_name="lst_water_to_wetland"
-)
+# lst_water_to_sparse = extract_vals(
+#     orig_class=water, val=5, var="lst", conv_name="lst_water_to_sparse"
+# )
+# lst_water_to_wetland = extract_vals(
+#     orig_class=water, val=6, var="lst", conv_name="lst_water_to_wetland"
+# )
 
 df_lst = pd.concat(
     [
         lst_EF_to_shrub,
-        lst_EF_to_herb,
         lst_EF_to_sparse,
+        # lst_EF_to_herb,
         # lst_DF_to_shrub,
         lst_DF_to_herb,
         lst_DF_to_sparse,
         lst_shrub_to_sparse,
-        lst_shrub_to_wetland,
-        lst_herb_to_shrub,
+        # lst_shrub_to_wetland,
+        # lst_herb_to_shrub,
         lst_herb_to_sparse,
-        lst_herb_to_wetland,
+        # lst_herb_to_wetland,
         lst_sparse_to_shrub,
         lst_sparse_to_herb,
-        lst_wetland_to_sparse,
-        lst_water_to_sparse,
-        lst_water_to_wetland,
+        # lst_wetland_to_sparse,
+        # lst_water_to_sparse,
+        # lst_water_to_wetland,
     ],
     ignore_index=True,
     axis=1,
@@ -641,4 +653,3 @@ ax1.yaxis.grid(True, which="major")
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig(fig_dir + "EF_Sparse_EL_WL.png")
 plt.show()
-
