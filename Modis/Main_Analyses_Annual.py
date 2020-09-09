@@ -17,12 +17,11 @@ fig_dir = out_dir + "Figures/Annual/"
 
 # This is a netcdf file that shows all the extreme conversions calculated using the "Max_Change_Analyses.py"
 conversions = xr.open_dataarray(
-    in_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions.nc"
+    in_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions_Table.nc"
 )
 
 # Summing the conversion over the year dimension
-print(conversions.sum("year"))
-
+print(conversions.sum("time"))
 
 # Calling the results of the Max_Changed_Analyses.py
 EF = xr.open_dataarray(
@@ -48,7 +47,7 @@ DF = xr.open_dataarray(
 )
 
 # The year DF_2007 is just two aribitraty pixels to show the changes between changed and unchaneged pixels (for presentation purposes)
-DF_2007 = DF.sel(year=2007)
+DF_2007 = DF.sel(time=2007)
 # DF_2007.to_netcdf('DF_2007.nc')
 
 # importing LST (natural and LUC components)
@@ -75,7 +74,6 @@ EI_diff = EI.diff("year")
 ES_diff = ES.diff("year")
 EW_diff = EW.diff("year")
 ET_diff = ET.diff("year")
-
 
 # This is the map of water_energy limited areas
 WL_EL = xr.open_dataarray(
@@ -239,16 +237,18 @@ columns = [
     "DF_to_Sparse",
     "Shrub_to_Sparse",
     #"Shrub_to_Wetland",
-    #"Herb_to_Shrub",
+    "Herb_to_Shrub",
     "Herb_to_Sparse",
     #"Herb_to_Wetland",
     "Sparse_to_Shrub",
     "Sparse_to_Herb",
-    #"Wetland_to_Sparse",
+    "Wetland_to_Sparse",
     #"Water_to_Sparse",
     #"Water_to_Wetland",
 ]
 
+
+tmp_lst = lst_lulc.where(EF == 3, drop=True).values
 lst_EF_to_shrub = extract_vals(
     orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
 )
@@ -274,9 +274,9 @@ lst_shrub_to_sparse = extract_vals(
 #     orig_class=shrub, val=6, var="lst", conv_name="lst_shrub_to_wetland"
 # )
 
-# lst_herb_to_shrub = extract_vals(
-#     orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
-# )
+lst_herb_to_shrub = extract_vals(
+    orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
+)
 lst_herb_to_sparse = extract_vals(
     orig_class=herb, val=5, var="lst", conv_name="lst_herb_to_sparse"
 )
@@ -292,9 +292,9 @@ lst_sparse_to_herb = extract_vals(
 )
 # lst_sparse_to_water = extract_vals(orig_class=sparse,val= 7,var= "lst",conv_name= "lst_sparse_to_water")
 
-# lst_wetland_to_sparse = extract_vals(
-#     orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
-# )
+lst_wetland_to_sparse = extract_vals(
+    orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
+)
 
 # lst_water_to_sparse = extract_vals(
 #     orig_class=water, val=5, var="lst", conv_name="lst_water_to_sparse"
@@ -318,7 +318,7 @@ df_lst = pd.concat(
         # lst_herb_to_wetland,
         lst_sparse_to_shrub,
         lst_sparse_to_herb,
-        # lst_wetland_to_sparse,
+        lst_wetland_to_sparse,
         # lst_water_to_sparse,
         # lst_water_to_wetland,
     ],
@@ -333,10 +333,10 @@ plt.title("LST", fontsize=20)
 plt.ylabel("$\Delta$ LST [C]", fontsize=16)
 plt.tight_layout()
 plt.savefig(fig_dir + "LST_Boxplot.png")
-plt.show()
+
 
 albedo_EF_to_shrub = extract_vals(EF, 3, "albedo", "albedo_EF_to_shrub")
-albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
+# albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
 albedo_EF_to_sparse = extract_vals(EF, 5, "albedo", "albedo_EF_to_sparse")
 
 # albedo_DF_to_shrub = extract_vals(DF, 3, "albedo", "albedo_DF_to_shrub")
@@ -344,11 +344,11 @@ albedo_DF_to_herb = extract_vals(DF, 4, "albedo", "albedo_DF_to_herb")
 albedo_DF_to_sparse = extract_vals(DF, 5, "albedo", "albedo_DF_to_sparse")
 
 albedo_shrub_to_sparse = extract_vals(shrub, 5, "albedo", "albedo_shrub_to_sparse")
-albedo_shrub_to_wetland = extract_vals(shrub, 6, "albedo", "albedo_shrub_to_wetland")
+# albedo_shrub_to_wetland = extract_vals(shrub, 6, "albedo", "albedo_shrub_to_wetland")
 
 albedo_herb_to_shrub = extract_vals(herb, 3, "albedo", "albedo_herb_to_shrub")
 albedo_herb_to_sparse = extract_vals(herb, 5, "albedo", "albedo_herb_to_sparse")
-albedo_herb_to_wetland = extract_vals(herb, 6, "albedo", "albedo_herb_to_wetland")
+# albedo_herb_to_wetland = extract_vals(herb, 6, "albedo", "albedo_herb_to_wetland")
 
 albedo_sparse_to_shrub = extract_vals(sparse, 3, "albedo", "albedo_sparse_to_shrub")
 albedo_sparse_to_herb = extract_vals(sparse, 4, "albedo", "albedo_sparse_to_herb")
@@ -357,27 +357,27 @@ albedo_wetland_to_sparse = extract_vals(
     wetland, 5, "albedo", "albedo_wetland_to_sparse"
 )
 
-albedo_water_to_sparse = extract_vals(water, 5, "albedo", "albedo_water_to_sparse")
-albedo_water_to_wetland = extract_vals(water, 6, "albedo", "albedo_water_to_wetland")
+# albedo_water_to_sparse = extract_vals(water, 5, "albedo", "albedo_water_to_sparse")
+# albedo_water_to_wetland = extract_vals(water, 6, "albedo", "albedo_water_to_wetland")
 
 df_albedo = pd.concat(
     [
         albedo_EF_to_shrub,
-        albedo_EF_to_herb,
+        # albedo_EF_to_herb,
         albedo_EF_to_sparse,
         # albedo_DF_to_shrub,
         albedo_DF_to_herb,
         albedo_DF_to_sparse,
         albedo_shrub_to_sparse,
-        albedo_shrub_to_wetland,
+        # albedo_shrub_to_wetland,
         albedo_herb_to_shrub,
         albedo_herb_to_sparse,
-        albedo_herb_to_wetland,
+        # albedo_herb_to_wetland,
         albedo_sparse_to_shrub,
         albedo_sparse_to_herb,
         albedo_wetland_to_sparse,
-        albedo_water_to_sparse,
-        albedo_water_to_wetland,
+        # albedo_water_to_sparse,
+        # albedo_water_to_wetland,
     ],
     ignore_index=True,
     axis=1,
@@ -394,7 +394,7 @@ plt.show()
 
 
 ET_EF_to_shrub = extract_vals(EF, 3, "et", "ET_EF_to_shrub")
-ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
 ET_EF_to_sparse = extract_vals(EF, 5, "et", "ET_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
@@ -402,38 +402,38 @@ ET_DF_to_herb = extract_vals(DF, 4, "et", "ET_DF_to_herb")
 ET_DF_to_sparse = extract_vals(DF, 5, "et", "ET_DF_to_sparse")
 
 ET_shrub_to_sparse = extract_vals(shrub, 5, "et", "ET_shrub_to_sparse")
-ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
 
 ET_herb_to_shrub = extract_vals(herb, 3, "et", "ET_herb_to_shrub")
 ET_herb_to_sparse = extract_vals(herb, 5, "et", "ET_herb_to_sparse")
-ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
 
 ET_sparse_to_shrub = extract_vals(sparse, 3, "et", "ET_sparse_to_shrub")
 ET_sparse_to_herb = extract_vals(sparse, 4, "et", "ET_sparse_to_herb")
 
 ET_wetland_to_sparse = extract_vals(wetland, 5, "et", "ET_wetland_to_sparse")
 
-ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
 
 df_et = pd.concat(
     [
         ET_EF_to_shrub,
-        ET_EF_to_herb,
+        # ET_EF_to_herb,
         ET_EF_to_sparse,
         # ET_DF_to_shrub,
         ET_DF_to_herb,
         ET_DF_to_sparse,
         ET_shrub_to_sparse,
-        ET_shrub_to_wetland,
+        # ET_shrub_to_wetland,
         ET_herb_to_shrub,
         ET_herb_to_sparse,
-        ET_herb_to_wetland,
+        # ET_herb_to_wetland,
         ET_sparse_to_shrub,
         ET_sparse_to_herb,
         ET_wetland_to_sparse,
-        ET_water_to_sparse,
-        ET_water_to_wetland,
+        # ET_water_to_sparse,
+        # ET_water_to_wetland,
     ],
     ignore_index=True,
     axis=1,

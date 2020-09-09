@@ -17,7 +17,7 @@ out_dir = '/xdisk/davidjpmoore/hamiddashti/data/LST/'
 #print('--------- Filtering the LST data based on the quality flag) ----------\n')
 
 chunks=({'time':10,'lat': 2692, 'lon': 8089})
-"""
+
 lst_day_ds = xr.open_dataset(in_dir+'MYD_LST_Day.nc',chunks=chunks)
 lst_day = lst_day_ds['LST_Day_1KM']
 lst_day_qc = lst_day_ds['QC_Day']
@@ -52,7 +52,7 @@ lst_mean_filtered.to_netcdf(out_dir+'lst_mean_filtered.nc')
 t2 = time.time()
 print(f'--------- Taking the mean is done: {(t2-t1)/60} minutes ---------------------\n\n')
 
-"""
+
 print('------------- Group by year ------------------------------------------------\n')
 t1 = time.time()
 
