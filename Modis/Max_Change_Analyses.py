@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
 	# -------------  Initialization -------------------------------------
 	# total_pixels = 2692 * 8089
-	years = pd.date_range(start="2004", end="2015", freq="A").year
+	year = pd.date_range(start="2004", end="2015", freq="A").year
 	classes = ["EF", "DF", "shrub", "herb", "sparse", "wetland", "water"]
 	# da = np.zeros((7, 7, int)
 	# conversions = xr.DataArray(conversions, dims=["original", "converted", "year"])
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 		da = np.zeros((7, 7), int)
 		da = xr.DataArray(da, dims=["original", "converted"])
 
-		print(str(years[k]))
+		print(str(year[k]))
 		for idx in np.arange(1, len(classes) + 1):
 			# for idx in np.arange(1, 2):
 			# loop over classes
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 				+ classes[idx - 1]
 				+ "_"
 				+ "to_other_"
-				+ str(years[k])
+				+ str(year[k])
 				+ ".nc"
 			)
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 			da[idx - 1, 6] = final_orig_to_other.where(final_orig_to_other == 7).count()
 
 		da = xr.DataArray(da, dims=["original", "converted"])
-		da.to_netcdf(out_dir + "conversions_table_" + str(years[k]) + ".nc")
+		da.to_netcdf(out_dir + "conversions_table_" + str(year[k]) + ".nc")
 		# print('year:'+str(years[k])+' da:')
 		# print(da)
 		# #da.to_netcdf(out_dir+'da')
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
 	dask.config.set(scheduler="processes")
 	lazy_results = []
-	for k in np.arange(0, len(years) - 1):
+	for k in np.arange(0, len(year) - 1):
 		lazy_result = dask.delayed(cal_max)(k)
 		lazy_results.append(lazy_result)
 
@@ -134,45 +134,45 @@ if __name__ == "__main__":
 		futures = dask.persist(*lazy_results)
 		results = dask.compute(*futures)
 
-	year = years[:-1]
+	year = year[:-1]
 	fnames = [out_dir + "conversions_table_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "conversions_Table.nc")
 
 	fnames = [out_dir + "Final_DF_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "DF_to_other.nc")
 
 	fnames = [out_dir + "Final_EF_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "EF_to_other.nc")
 
 	fnames = [out_dir + "Final_herb_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "Herb_to_other.nc")
 	
 	fnames = [out_dir + "Final_shrub_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "Shrub_to_other.nc")
 
 	fnames = [out_dir + "Final_sparse_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "Sparse_to_other.nc")
 
 	fnames = [out_dir + "Final_water_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "Water_to_other.nc")
 
 	fnames = [out_dir + "Final_wetland_to_other_" + str(k) + ".nc" for k in range(2004, 2014)]
 	conversions = xr.concat([xr.open_dataarray(f) for f in fnames], dim=year)
-	conversions = conversions.rename({"concat_dim": "time"})
+	conversions = conversions.rename({"concat_dim": "year"})
 	conversions.to_netcdf(out_dir + "Wetland_to_other.nc")
 
 

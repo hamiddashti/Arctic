@@ -1,6 +1,9 @@
-import numpy as np 
-import matplotlib.pylab as plt
+import xarray as xr
+import rioxarray
+WL_EL = xr.open_rasterio(in_dir + "Data/Water_Energy_Limited/Tif/WL_EL_Reclassified.tif")
+WL_EL = WL_EL.drop('band')
 
-test = np.arange(0,100)
-plt.plot(test)
-plt.savefig('/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Test_dir/test_fig.png')
+EC_tmp = EC.isel(year=1) 
+
+test = WL_EL.rio.reproject_match(EC_tmp)
+test.to_netcdf(in_dir + 'Data/Water_Energy_Limited/Tif/test.nc')
