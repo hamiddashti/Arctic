@@ -3,6 +3,7 @@ import rioxarray
 import glob
 import pandas as pd
 
+
 # This script just convert the tif files (PML_V2:
 # https://developers.google.com/earth-engine/datasets/catalog/CAS_IGSNRR_PML_V2)
 # products into netcdf. The tif files aggregated to annual by summing up the daily data
@@ -38,6 +39,37 @@ ES.to_netcdf(out_dir+'ES.nc')
 EI.to_netcdf(out_dir+'EI.nc')
 EW.to_netcdf(out_dir+'EW.nc')
 ET.to_netcdf(out_dir+'ET.nc')
+
+''' -----------------------------------------------------------------------------
+				
+						processing the growing season 
+
+-------------------------------------------------------------------------------'''
+
+in_dir = '/data/ABOVE/Final_data/ET_Final/Monthly_ET/'
+out_dir = '/data/ABOVE/Final_data/ET_Final/Growing_ET/'
+
+ec= xr.open_dataarray(in_dir+'EC.nc')
+date = pd.to_datetime(da.time.values)
+da = da.assign_coords({"time":date})
+
+def (da):
+	da_grouped = da.where(da.time.dt.month.isin([4, 5, 6, 7, 8, 9, 10])) 
+	da_growing = da_grouped.groupby("time.year").sum()
+	da_growing = da_growing.where(da_growing!=0)
+	retun da_growing
+
+
+ec_growing = da_growing.where(da_growing!=0)
+
+
+
+
+
+
+
+
+
 
 print("------- All Dnone! --------")
 
