@@ -296,7 +296,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 	changed_pixels_mask_concat = changed_pixels_mask_concat.rename(
 		{"concat_dim": "year"}
 	)
-	changed_pixels_mask_concat.to_netcdf(out_dir + "changed_pixels_mask_concat.nc")
+	changed_pixels_mask_concat.to_netcdf(out_dir + "changed_pixels_mask.nc")
 
 	fname_delta_lst_total = []
 	for i in range(0, len(years)):
@@ -306,7 +306,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		[xr.open_dataarray(f) for f in fname_delta_lst_total], dim=years
 	)
 	delta_lst_total_concat = delta_lst_total_concat.rename({"concat_dim": "year"})
-	delta_lst_total_concat.to_netcdf(out_dir + "delta_lst_total_concat.nc")
+	delta_lst_total_concat.to_netcdf(out_dir + "delta_lst_total.nc")
 
 	fname_delta_lst_changed = []
 	for i in range(0, len(years)):
@@ -316,7 +316,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		[xr.open_dataarray(f) for f in fname_delta_lst_changed], dim=years
 	)
 	delta_lst_changed_concat = delta_lst_changed_concat.rename({"concat_dim": "year"})
-	delta_lst_changed_concat.to_netcdf(out_dir + "delta_lst_changed_concat.nc")
+	delta_lst_changed_concat.to_netcdf(out_dir + "delta_lst_changed.nc")
 
 	fname_delta_lst_not_changed = []
 	for i in range(0, len(years)):
@@ -328,7 +328,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 	delta_lst_not_changed_concat = delta_lst_not_changed_concat.rename(
 		{"concat_dim": "year"}
 	)
-	delta_lst_not_changed_concat.to_netcdf(out_dir + "delta_lst_not_changed_concat.nc")
+	delta_lst_not_changed_concat.to_netcdf(out_dir + "delta_lst_not_changed.nc")
 
 	fname_delta_lst_changed_nv_component = []
 	for i in range(0, len(years)):
@@ -341,7 +341,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		delta_lst_changed_nv_component_concat.rename({"concat_dim": "year"})
 	)
 	delta_lst_changed_nv_component_concat.to_netcdf(
-		out_dir + "delta_lst_changed_nv_component_concat.nc"
+		out_dir + "delta_lst_changed_nv_component.nc"
 	)
 
 	fname_delta_lst_changed_lulc_component = []
@@ -356,7 +356,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		delta_lst_changed_lulc_component_concat.rename({"concat_dim": "year"})
 	)
 	delta_lst_changed_lulc_component_concat.to_netcdf(
-		out_dir + "delta_lst_changed_lulc_component_concat.nc"
+		out_dir + "delta_lst_changed_lulc_component.nc"
 	)
 
 	fname_delta_abs_luc_changed = []
@@ -369,7 +369,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 	delta_abs_luc_changed_concat = delta_abs_luc_changed_concat.rename(
 		{"concat_dim": "year"}
 	)
-	delta_abs_luc_changed_concat.to_netcdf(out_dir + "delta_abs_luc_changed_concat.nc")
+	delta_abs_luc_changed_concat.to_netcdf(out_dir + "delta_abs_luc_changed.nc")
 
 	fname_delta_abs_luc_not_changed = []
 	for i in range(0, len(years)):
@@ -382,7 +382,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		{"concat_dim": "year"}
 	)
 	delta_abs_luc_not_changed_concat.to_netcdf(
-		out_dir + "delta_abs_luc_not_changed_concat.nc"
+		out_dir + "delta_abs_luc_not_changed.nc"
 	)
 
 	fname_delta_luc_loss_gain_changed = []
@@ -396,7 +396,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		{"concat_dim": "year"}
 	)
 	delta_luc_loss_gain_changed_concat.to_netcdf(
-		out_dir + "delta_luc_loss_gain_changed_concat.nc"
+		out_dir + "delta_luc_loss_gain_changed.nc"
 	)
 
 	fname_delta_luc_loss_gain_not_changed = []
@@ -410,7 +410,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		delta_luc_loss_gain_not_changed_concat.rename({"concat_dim": "year"})
 	)
 	delta_luc_loss_gain_not_changed_concat.to_netcdf(
-		out_dir + "delta_luc_loss_gain_not_changed_concat.nc"
+		out_dir + "delta_luc_loss_gain_not_changed.nc"
 	)
 
 

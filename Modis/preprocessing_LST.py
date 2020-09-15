@@ -64,9 +64,9 @@ lst_day_annual = lst_day_filtered.groupby('time.year').mean(dim='time')
 lst_night_annual = lst_night_filtered.groupby('time.year').mean(dim='time')
 lst_mean_annual = lst_mean_filtered.groupby('time.year').mean(dim='time')
 
-lst_day_annual.to_netcdf(out_dir+'lst_day_annual.nc')
-lst_night_annual.to_netcdf(out_dir+'lst_night_annual.nc')
-lst_mean_annual.to_netcdf(out_dir+'lst_mean_annual.nc')
+lst_day_annual.to_netcdf(out_dir+'lst_day_Annual.nc')
+lst_night_annual.to_netcdf(out_dir+'lst_night_Annual.nc')
+lst_mean_annual.to_netcdf(out_dir+'lst_mean_Annual.nc')
 
 t2 = time.time()
 print(f"------------ Finished annual mean: {t2-t1} --------------------------------\n")
@@ -83,9 +83,9 @@ lst_night_growing = modis_functions.growing_season(lst_night_filtered)
 # precise if we use the lst_mean_filtered, beacuse we count for all NAs in day and night original LST
 lst_mean_growing = modis_functions.growing_season(lst_mean_filtered)
 
-lst_day_growing.to_netcdf(out_dir+'lst_day_growing.nc')
-lst_night_growing.to_netcdf(out_dir+'lst_night_growing.nc')
-lst_mean_growing.to_netcdf(out_dir+'lst_mean_growing.nc')
+lst_day_growing.to_netcdf(out_dir+'lst_day_Growing.nc')
+lst_night_growing.to_netcdf(out_dir+'lst_night_Growing.nc')
+lst_mean_growing.to_netcdf(out_dir+'lst_mean_Growing.nc')
 
 t2 = time.time()
 print(f'--------- Growing season Done: {(t2-t1)/60} minutes\n\n')

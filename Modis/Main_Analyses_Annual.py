@@ -8,22 +8,110 @@ There are seven classes in general which in this scriot is numbered from 1 to 7 
 4: Herbacious; 5:sparse; 6:wetland; and 7:water 
 
 """
+# Loading the libraries
 import xarray as xr
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 
+'''---------------------------------------------------------
+							Parameters
+---------------------------------------------------------'''
+analyses_mode = "Growing" 
+LUC_Type = [
+	"Evergreen Forest",
+	"Deciduous Forest", 
+	"Shrub",
+	"Herbaceous",
+	"Sparse",
+	"Wetland",
+	"Water"
+	]
+
+'''---------------------------------------------------------
+							Prepare data
+---------------------------------------------------------'''
 print('----------------- Preparing data -----------------\n')
-in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
+in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
 out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
-fig_dir = out_dir + "Main_Max_Change/Figures/Annual/"
+fig_dir = out_dir + "Main_Max_Change/Figures/"+analyses_mode+"/"
+
+if analyses_mode=="Growing":
+	print("Analyses mode is set to Growing, meaning we are working on the growing season (Apr-Nov; seven months)\n")
+elif analyses_mode=="Annual":
+	print("Analyses mode is set to Annual, meaning we are working on the annual data (Jan-Dec)\n")
+print(f"Input directory:{in_dir}")
+print(f"Output directory:{out_dir}")
+print(f"Figure directory:{fig_dir}\n")
+
+print("Working on LST...")
+# importing LST (natural and LUC components)
+lst_lulc = xr.open_dataarray(
+	out_dir
+	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_changed_lulc_component.nc"
+)
+
+lst_nv = xr.open_dataarray(
+	out_dir
+	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_changed_nv_component.nc"
+)
+lst_diff_total = xr.open_dataarray(
+	out_dir
+	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_total.nc"
+)
+lst = (
+	xr.open_dataarray(in_dir +analyses_mode+"/"+analyses_mode+"_LST/lst_mean_"+analyses_mode+".nc") - 273.15
+)  # kelvin to C
+lst = lst.sel(year=slice("2003", "2014"))
+lst = lst.rename({"lat": "y", "lon": "x"})
+
+print("Working on albedo...")
+albedo = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_Albedo/Albedo_"+analyses_mode+".nc")
+albedo = albedo.sel(year=slice("2003", "2014"))
+albedo_diff = albedo.diff("year")
+
+print("Working on ET and its components...")
+EC = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EC_"+analyses_mode+".nc") # Vegetation transpiration
+EI = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EI_"+analyses_mode+".nc") # Vegetation transpiration
+ES = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/ES_"+analyses_mode+".nc") # Vegetation transpiration
+EW = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EW_"+analyses_mode+".nc") # Vegetation transpiration
+ET = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/ET_"+analyses_mode+".nc") # Vegetation transpiration
+ECI = EC + EI  # canopy evapotranspiration
+ESW = ES + EW  # soil/water/ice/snow evaporation
+EC = EC.where(EC != 0)  # Convert zeros to nan
+EI = EI.where(EI != 0)
+ES = ES.where(ES != 0)
+EW = EW.where(EW != 0)
+ET = ET.where(ET != 0)
+ECI = ECI.where(ECI != 0)
+ESW = ESW.where(ESW != 0)
+#Take the difference in ET 
+EC_diff = EC.diff("year")
+EI_diff = EI.diff("year")
+ES_diff = ES.diff("year")
+EW_diff = EW.diff("year")
+ET_diff = ET.diff("year")
+ECI_diff = ECI.diff("year")
+ESW_diff = ESW.diff("year")
 
 # This is a netcdf file that shows all the extreme conversions calculated using the "Max_Change_Analyses.py"
 conversions = xr.open_dataarray(
 	out_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions_Table.nc"
 )
 
-print(conversions.sum("year"))
+conversions_sum = conversions.sum("year")
+conversions_sum = pd.DataFrame(data = conversions_sum.values,index = LUC_Type,columns=LUC_Type)
+
+with open(out_dir +analyses_mode+"_report.txt", "w") as text_file:
+    print("\n Number of pixles undergone extreme conversion. Rows/columns are\
+ classes before/after conversion (Table XXXX in the paper):",
+        file=text_file,
+    )
+    print(conversions_sum, file=text_file)
+text_file.close()
+print("Number of pixles undergone extreme conversion. Rows/columns are\
+ classes before/after conversion (Table XXXX in the paper):\n")
+print(conversions_sum)
 
 # Calling the results of the Max_Changed_Analyses.py
 EF = xr.open_dataarray(
@@ -48,80 +136,14 @@ DF = xr.open_dataarray(
 	out_dir + "LUC_Change_Extracted/LUC_max_conversions/DF_to_other.nc"
 )
 
-# The year DF_2007 is just two aribitraty pixels to show the changes between changed and unchaneged pixels (for presentation purposes)
-DF_2007 = DF.sel(year=2007)
-# DF_2007.to_netcdf('DF_2007.nc')
-
-# importing LST (natural and LUC components)
-lst_lulc = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_Annual_outputs/delta_lst_changed_lulc_component.nc"
-)
-lst_nv = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_Annual_outputs/delta_lst_changed_nv_component.nc"
-)
-lst_diff_total = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_Annual_outputs/delta_lst_total.nc"
-)
-lst = (
-	xr.open_dataarray(in_dir + "Data/Annual/Annual_LST/lst_mean_annual.nc") - 273.15
-)  # kelvin to C
-lst = lst.sel(year=slice("2003", "2014"))
-lst = lst.rename({"lat": "y", "lon": "x"})
-
-# Importing Albedo and taking the temporal difference
-albedo = xr.open_dataarray(in_dir + "Data/Annual/Annual_Albedo/Albedo_annual.nc")
-albedo = albedo.sel(year=slice("2003", "2014"))
-albedo_diff = albedo.diff("year")
-
-# Importing ET and taking the temporal difference
-EC = xr.open_dataarray(
-	in_dir + "Data/Annual/Annual_ET/EC_Annual.nc"
-)  # Vegetation transpiration
-EI = xr.open_dataarray(
-	in_dir + "Data/Annual/Annual_ET/EI_Annual.nc"
-)  # Interception from vegetation canopy
-ES = xr.open_dataarray(in_dir + "Data/Annual/Annual_ET/ES_Annual.nc")  # Soil evaporation
-EW = xr.open_dataarray(
-	in_dir + "Data/Annual/Annual_ET/EW_Annual.nc"
-)  # Water body, snow and ice evaporation. Penman evapotranspiration is regarded as actual evaporation for them.
-
-ET = xr.open_dataarray(
-	in_dir + "Data/Annual/Annual_ET/ET_Annual.nc"
-)  # Total ET
-
-ECI = EC + EI  # canopy evapotranspiration
-ESW = ES + EW  # soil/water/ice/snow evaporation
-
-EC = EC.where(EC != 0)  # Convert zeros to nan
-EI = EI.where(EI != 0)
-ES = ES.where(ES != 0)
-EW = EW.where(EW != 0)
-ET = ET.where(ET != 0)
-ECI = ECI.where(ECI != 0)
-ESW = ESW.where(ESW != 0)
-
-#Take the difference in ET 
-EC_diff = EC.diff("year")
-EI_diff = EI.diff("year")
-ES_diff = ES.diff("year")
-EW_diff = EW.diff("year")
-ET_diff = ET.diff("year")
-ECI_diff = ECI.diff("year")
-ESW_diff = ESW.diff("year")
-
-# This is the map of water_energy limited areas
+# This is the map of water_energy limited areas with two classes
 WL_EL = xr.open_dataarray(
-	in_dir + "Data/Water_Energy_Limited/Tif/WL_EL_Reclassified_reproject.nc"
+	in_dir + "Water_Energy_Limited/Tif/WL_EL_Reclassified_reproject.nc"
 )
 WL_EL = WL_EL.squeeze() 
 
 '''----------------------------------------------------------------------------
-
 					Functions used in various part of teh script
-
 ----------------------------------------------------------------------------'''
 def find_coord(da, val, n):
 	"""
@@ -419,80 +441,12 @@ def extract_wl_el(orig_class, val):
 	et_EL_WL = pd.concat(et_EL_WL, axis=1)
 	return lst_EL_WL, albedo_EL_WL, et_EL_WL
 
-
-
-""" ------------------------------------------------------------------
-Analyzing an two example pixles where one the LUC (e.g. DF) is changed
-and the other which is approximaltly close hasn't been changed. These pixles 
-are arbitrary and just for show.  
--------------------------------------------------------------------"""
-print('----------------- Working on the example -----------------\n')
-# Find the coordinates of a random pixel where DF changed to herbaceuous
-x_changed, y_changed = find_coord(DF_2007, 4, 2)
-# some arbitarary pixle nearby with no change in DF class (~94%)
-x_not_changed = -121.6786
-y_not_changed = 56.2286
-
-lst_changed = lst.sel(x=x_changed, y=y_changed, method="nearest")
-lst_not_changed = lst.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(lst_changed, lst_not_changed, "LST [C]", outname="LST_DF_Herb_Example.png")
-
-lst_lulc_changed = lst_lulc.sel(x=x_changed, y=y_changed, method="nearest")
-lst_nv_changed = lst_nv.sel(x=x_changed, y=y_changed, method="nearest")
-
-lst_diff_total_changed = lst_diff_total.sel(x=x_changed, y=y_changed, method="nearest")
-lst_diff_total_not_changed = lst_diff_total.sel(
-	x=x_not_changed, y=y_not_changed, method="nearest"
-)
-plot_example(
-	lst_diff_total_changed,
-	lst_diff_total_not_changed,
-	r"$\Delta$ LST [C]",
-	outname="LST_DF_Herb_trend_Example.png",
-)
-
-albedo_changed = albedo.sel(x=x_changed, y=y_changed, method="nearest")
-albedo_not_changed = albedo.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(
-	albedo_changed, albedo_not_changed, "Albedo", outname="Albedo_DF_Herb_Example.png"
-)
-
-albedo_diff_changed = albedo_diff.sel(x=x_changed, y=y_changed, method="nearest")
-albedo_diff_not_changed = albedo_diff.sel(
-	x=x_not_changed, y=y_not_changed, method="nearest"
-)
-plot_example(
-	albedo_diff_changed,
-	albedo_diff_not_changed,
-	r"$\Delta$ Albedo",
-	outname="Albedo_DF_Herb_trend_Example.png",
-)
-
-ET_changed = ET.sel(x=x_changed, y=y_changed, method="nearest")
-ET_not_changed = ET.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(ET_changed, ET_not_changed, "ET [mm/year]", outname="ET.png")
-
-EC_changed = EC.sel(x=x_changed, y=y_changed, method="nearest")
-EC_not_changed = EC.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(EC_changed, EC_not_changed, "EC [mm/year]", outname="EC.png")
-
-ES_changed = ES.sel(x=x_changed, y=y_changed, method="nearest")
-ES_not_changed = ES.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(ES_changed, ES_not_changed, "ES [mm/year]", outname="ES.png")
-
-EI_changed = EI.sel(x=x_changed, y=y_changed, method="nearest")
-EI_not_changed = EI.sel(x=x_not_changed, y=y_not_changed, method="nearest")
-plot_example(EI_changed, EI_not_changed, "EI [mm/year]", outname="EI.png")
-
 """ ---------------------------------------------------------------------
-
-		Now lets do the same analyses for the entire region...
-The main criteria is that a LUC should include more than 50 pixels that 
-we can make somethin 
-
+Regional analyses: The main criteria is that a LUC should include more 
+than 50 pixels that we can make robust conclusions 
 ----------------------------------------------------------------------"""
-print('----------------- Working on the entire region -----------------\n')
 
+print('----------------- Working on the entire region -----------------\n')
 columns = [
 	"EF_to_Shrub",
 	# "EF_to_Herb", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
@@ -511,7 +465,6 @@ columns = [
 	# "Water_to_Sparse",	# We ignore this conversions since the number of pixels including this conversion is less than 50
 	# "Water_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
 ]
-
 tmp_lst = lst_lulc.where(EF == 3, drop=True).values
 lst_EF_to_shrub = extract_vals(
 	orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
@@ -597,6 +550,7 @@ myboxplot(
 	margin=0.3,
 	outname="LST_Boxplot.png",
 )
+
 
 albedo_EF_to_shrub = extract_vals(EF, 3, "albedo", "albedo_EF_to_shrub")
 # albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
@@ -730,10 +684,27 @@ df3 = {
 	}
 myboxplot_group(df1, df2, df3, columns=columns, txt_pos=9, outname="Boxplot_groups.png")
 
+df_lst_mean = df_lst.mean()
+df_albedo_mean = df_albedo.mean()
+df_et_mean = df_et.mean()
+df_lst_std = df_lst.std()
+df_albedo_std = df_albedo.std()
+df_et_std = df_et.std()
+
+frames = pd.concat([df_lst_mean,df_albedo_mean,df_et_mean,df_lst_std,df_albedo_std,df_et_std],axis=1)
+frames.columns = ["LST Mean","Albedo Mean","ET Mean","LST STD","Albedo STD","ET STD"]
+
+with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+    print("\n Mean and STD of the LST, albedo and ET aftr LUC conversion:",
+        file=text_file,
+    )
+    print(frames, file=text_file)
+text_file.close()
+print("Mean and STD of the LST, albedo and ET aftr LUC conversion:")
+print(frames)
+
 """---------------------------------------------------------------------------
-
 					Analyzing energy vs. water limited 
-
 ------------------------------------------------------------------------------"""
 print('----------------- Working on the energy vs water limited -----------------\n')
 # class_name = ["High_WL", "Moderate_WL", "Low_WL", "Low_EL", "High_EL"]
@@ -757,6 +728,23 @@ df3 = {
 myboxplot_group(
 	df1, df2, df3, columns=class_name, txt_pos=9, outname="EF_sparse_EL_WL.png"
 )
+lst_mean=lst_EL_WL.mean()
+albedo_mean=albedo_EL_WL.mean()
+et_mean=et_EL_WL.mean()
+lst_std=lst_EL_WL.std()
+albedo_std=albedo_EL_WL.std()
+et_std=et_EL_WL.std()
+
+ef_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
+ef_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
+
+with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+    print("\n Mean and STD of water vs. energy limited LST, albedo and ET for EF to sparse conversion:",
+        file=text_file,
+    )
+    print(ef_sparse_el_wl_df, file=text_file)
+text_file.close()
+
 # extract_wl_el(orig_class=EF, val=3, outname="EF_shrub_EL_WL.png")  # Not enough data
 # extract_wl_el(orig_class=DF, val=5, outname="DF_sparse_EL_WL.png")  # Not enough data
 # extract_wl_el(orig_class=DF, val=4, outname="DF_herb_EL_WL.png")  # Not enough data
@@ -784,6 +772,24 @@ df3 = {
 myboxplot_group(
 	df1, df2, df3, columns=class_name, txt_pos=9, outname="Herb_sparse_EL_WL.png"
 )
+
+lst_mean=lst_EL_WL.mean()
+albedo_mean=albedo_EL_WL.mean()
+et_mean=et_EL_WL.mean()
+lst_std=lst_EL_WL.std()
+albedo_std=albedo_EL_WL.std()
+et_std=et_EL_WL.std()
+
+herb_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
+herb_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
+
+with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+    print("\n Mean and STD of water vs. energy limited LST, albedo and ET for herb to sparse conversion:",
+        file=text_file,
+    )
+    print(herb_sparse_el_wl_df, file=text_file)
+text_file.close()
+
 # extract_wl_el(
 # 	orig_class=sparse, val=3, outname="Sparse_shrub_EL_WL.png"
 # )  # Not enough data
@@ -1083,7 +1089,6 @@ df1 = {
 	"label": "$\Delta$CI [mm/year]]",
 	"ylim": [-300, 300],
 }
-
 df2 = {
 	"name": "SW",
 	"df": df_esw,
@@ -1095,6 +1100,92 @@ df3 = {"name": "ET", "df": df_et, "label": "$\Delta$ET [mm/year]]", "ylim": [-85
 myboxplot_group(
 	df1, df2, df3, columns=columns, txt_pos=200, outname="ET_Components_integrated.png"
 )
+
+df_eci_mean = df_eci.mean()
+df_esw_mean = df_esw.mean()
+df_et_mean = df_et.mean()
+df_eci_std = df_eci.std()
+df_esw_std = df_esw.std()
+df_et_std = df_et.std()
+
+frames = pd.concat([df_eci_mean,df_esw_mean,df_et_mean,df_eci_std,df_esw_std,df_et_std],axis=1)
+frames.columns = ["ECI Mean","ESW Mean","ET Mean","ECI STD","ESW STD","ET STD"]
+
+with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+    print("\n Mean and STD of ET components for different LUC conversions:",
+        file=text_file,
+    )
+    print(frames, file=text_file)
+text_file.close()
+print("Mean and STD of ET components for different LUC conversions:")
+print(frames)
+
+
+
+""" ------------------------------------------------------------------
+Analyzing an two example pixles where one the LUC (e.g. DF) is changed
+and the other which is approximaltly close hasn't been changed. These pixles 
+are arbitrary and just for show.  
+-------------------------------------------------------------------"""
+print('----------------- Working on the example -----------------\n')
+# The year DF_2007 is just two aribitraty pixels to show the changes between changed and unchaneged pixels (for presentation purposes)
+DF_2007 = DF.sel(year=2007)
+# Find the coordinates of a random pixel where DF changed to herbaceuous
+x_changed, y_changed = find_coord(DF_2007, 4, 2)
+# some arbitarary pixle nearby with no change in DF class (~94%)
+x_not_changed = -121.6786
+y_not_changed = 56.2286
+
+lst_changed = lst.sel(x=x_changed, y=y_changed, method="nearest")
+lst_not_changed = lst.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(lst_changed, lst_not_changed, "LST [C]", outname="LST_DF_Herb_Example.png")
+
+lst_lulc_changed = lst_lulc.sel(x=x_changed, y=y_changed, method="nearest")
+lst_nv_changed = lst_nv.sel(x=x_changed, y=y_changed, method="nearest")
+
+lst_diff_total_changed = lst_diff_total.sel(x=x_changed, y=y_changed, method="nearest")
+lst_diff_total_not_changed = lst_diff_total.sel(
+	x=x_not_changed, y=y_not_changed, method="nearest"
+)
+plot_example(
+	lst_diff_total_changed,
+	lst_diff_total_not_changed,
+	r"$\Delta$ LST [C]",
+	outname="LST_DF_Herb_trend_Example.png",
+)
+
+albedo_changed = albedo.sel(x=x_changed, y=y_changed, method="nearest")
+albedo_not_changed = albedo.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(
+	albedo_changed, albedo_not_changed, "Albedo", outname="Albedo_DF_Herb_Example.png"
+)
+
+albedo_diff_changed = albedo_diff.sel(x=x_changed, y=y_changed, method="nearest")
+albedo_diff_not_changed = albedo_diff.sel(
+	x=x_not_changed, y=y_not_changed, method="nearest"
+)
+plot_example(
+	albedo_diff_changed,
+	albedo_diff_not_changed,
+	r"$\Delta$ Albedo",
+	outname="Albedo_DF_Herb_trend_Example.png",
+)
+
+ET_changed = ET.sel(x=x_changed, y=y_changed, method="nearest")
+ET_not_changed = ET.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(ET_changed, ET_not_changed, "ET [mm/year]", outname="ET.png")
+
+EC_changed = EC.sel(x=x_changed, y=y_changed, method="nearest")
+EC_not_changed = EC.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(EC_changed, EC_not_changed, "EC [mm/year]", outname="EC.png")
+
+ES_changed = ES.sel(x=x_changed, y=y_changed, method="nearest")
+ES_not_changed = ES.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(ES_changed, ES_not_changed, "ES [mm/year]", outname="ES.png")
+
+EI_changed = EI.sel(x=x_changed, y=y_changed, method="nearest")
+EI_not_changed = EI.sel(x=x_not_changed, y=y_not_changed, method="nearest")
+plot_example(EI_changed, EI_not_changed, "EI [mm/year]", outname="EI.png")
 
 print('----------------- All done! -----------------\n')
 
