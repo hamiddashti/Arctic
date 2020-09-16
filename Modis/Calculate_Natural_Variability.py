@@ -3,15 +3,24 @@ import rioxarray
 import numpy as np
 import glob
 import pandas as pd
-
-# import modis_functions
 from numpy.lib.stride_tricks import as_strided
 import matplotlib.pyplot as plt
 
-# from config import config_paths
+# -----------------------------------------------------------------
+# 		Prameteres and paths
+# -----------------------------------------------------------------
+analyses_mode = "Monthly" 
+LUC_dir = '/data/ABOVE/Final_data/LUC/'
+nband = 7  # number of LUC classes in the analysis
+win_size = (
+	51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
+)
+# Matrix of distance of each pixel from the central pixel used in inverse
+# distance weighting in the next step
+dist_m = dist_matrix(win_size, win_size)
 
 # ---------------------------------------------------------------------
-#                              Functions
+#                      Functions used in the script
 # ---------------------------------------------------------------------
 def check_finite(x):
 	# This fuction checks if there is any finite values in an array
@@ -84,40 +93,7 @@ def window_view(data, win_size, type):
 
 	return data_view
 
-
-# -----------------------------------------------------------------
-# 		Prameteres and paths
-# -----------------------------------------------------------------
-# in_dir = "F:\\working\\LUC\\Data\\"
-# out_dir = "F:\\working\\LUC\\test\\"
-in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
-out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Test/"
-# in_dir = config_paths['in_dir']
-# out_dir = config_paths['out_dir']
-
-nband = 7  # number of LUC classes in the analysis
-years = range(2003, 2015)  # 2003-2015
-win_size = (
-	51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
-)
-# win_size_half = int(np.floor(win_size / 2))
-
-# Matrix of distance of each pixel from the central pixel used in inverse
-# distance weighting in the next step
-dist_m = dist_matrix(win_size, win_size)
-
-LUC = xr.open_dataarray(in_dir + "LUC/LULC_2003_2014.nc")
-
-# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
-LST = xr.open_dataarray(in_dir + "Growing/Growing_LST/lst_mean_growing.nc")
-LST = LST.rename({"lat": "y", "lon": "x"})
-LST = LST - 273.15
-
-# ------------------------------------------------------------------
-#                           Preprocessing
-# Calculate the delta LST and LUC
-# ------------------------------------------------------------------
-def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
+def calculate_nv(LST, LUC, nband, years, win_size, dist_m,out_dir):
 	for k in range(0, len(years) - 1):
 		year1 = years[k]
 		year2 = years[k + 1]
@@ -256,6 +232,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 		# ------------------------------------------------------------
 
 		# Savinng the results
+		
 		changed_pixels_mask.to_netcdf(
 			out_dir + "changed_pixels_mask_" + str(year2) + ".nc"
 		)
@@ -284,14 +261,14 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 			out_dir + "delta_luc_loss_gain_not_changed_" + str(year2) + ".nc"
 		)
 
-	years = pd.date_range(start="2004", end="2015", freq="A").year
-
+	
+	#years = pd.date_range(start=years[1].year.dt.year, end=years[len(years)-1].year.dt.year, freq="A").year
 	fname_changed_pixels_mask = []
-	for i in range(0, len(years)):
+	for i in range(1, len(years)):
 		tmp = out_dir + "changed_pixels_mask_" + str(years[i]) + ".nc"
 		fname_changed_pixels_mask.append(tmp)
 	changed_pixels_mask_concat = xr.concat(
-		[xr.open_dataarray(f) for f in fname_changed_pixels_mask], dim=years
+		[xr.open_dataarray(f) for f in fname_changed_pixels_mask], dim=years[1:]
 	)
 	changed_pixels_mask_concat = changed_pixels_mask_concat.rename(
 		{"concat_dim": "year"}
@@ -310,7 +287,7 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 
 	fname_delta_lst_changed = []
 	for i in range(0, len(years)):
-		tmp = out_dir + "delta_lst_changed_" + str(years[i]) + ".nc"
+		tmp = out_dir + "delta_lst_changed_" + str(years[i.year.dt.year.values]) + ".nc"
 		fname_delta_lst_changed.append(tmp)
 	delta_lst_changed_concat = xr.concat(
 		[xr.open_dataarray(f) for f in fname_delta_lst_changed], dim=years
@@ -414,6 +391,62 @@ def calculate_nv(LST, LUC, nband, years, win_size, dist_m):
 	)
 
 
-calculate_nv(LST, LUC, nband, years, win_size, dist_m)
+
+if analyses_mode =="Monthly":
+	# ------------------------------------------------------------------
+	# 				Calculate the delta LST and LUC Monthly
+	# ------------------------------------------------------------------
+
+	print("Calculating monthly natural variablity and LUC compontents of \u0394LST")
+	
+	LUC = xr.open_dataarray(LUC_dir+"LULC_2003_2014.nc")
+	Months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+	in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Monthly_Mean/"
+	# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
+	for i in list(range(0,12)):
+		print(f"Month ----> {Months[i]}")
+		out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/\
+	Natural_Variability/Natural_Variability_Monthly_outputs/"+Months[i]+'/'
+		LST = xr.open_dataarray(in_dir + "LST_Mean_"+Months[i]+".nc")
+		LST = LST.rename({"lat": "y", "lon": "x"})
+		LST = LST - 273.15
+		LST = LST.rename({"time":"year"})
+		LST = LST.assign_coords({"year":LST.year.dt.year.values})
+		LUC = xr.open_dataarray('/data/ABOVE/Final_data/LUC/LULC_2003_2014.nc')
+		years = range(2003, 2015)  # Our focus is on years 2003-2013
+		calculate_nv(LST, LUC, nband, years, win_size, dist_m,out_dir)
+	print("The monthly results are saved in /data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/\
+	Natural_Variability/Natural_Variability_Monthly_outputs/")
+elif analyses_mode=="Growing":
+	# ------------------------------------------------------------------
+	# 				Calculate the delta LST and LUC Growing
+	# ------------------------------------------------------------------
+	print("Calculating growing season (Apr-Nov) natural variablity and LUC compontents of \u0394LST")
+	years = range(2003, 2015)  # 2003-2015
+
+	in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Growing_Mean/"
+	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Natural_Variability/Natural_Variability_Growing_outputs/"
+	# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
+	LST = xr.open_dataarray(in_dir + "lst_mean_growing.nc")
+	LST = LST.rename({"lat": "y", "lon": "x"})
+	LST = LST - 273.15
+	calculate_nv(LST, LUC, nband, years, win_size, dist_m,out_dir)
+	print("The growing season results are saved in /data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/\
+	Natural_Variability/Natural_Variability_Growing_outputs/")
+elif analyses_mode=="Annual":
+	# ------------------------------------------------------------------
+	# 				Calculate the delta LST and LUC Annual
+	# ------------------------------------------------------------------
+	years = range(2003, 2015)  # 2003-2015
+
+	in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Annual_Mean/"
+	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Natural_Variability/Natural_Variability_Annual_outputs/"
+	# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
+	LST = xr.open_dataarray(in_dir + "lst_mean_annual.nc")
+	LST = LST.rename({"lat": "y", "lon": "x"})
+	LST = LST - 273.15
+	calculate_nv(LST, LUC, nband, years, win_size, dist_m,out_dir)
+	print("The annual results are saved in /data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/\
+	Natural_Variability/Natural_Variability_Annual_outputs/")
 
 ###################     All Done !    #########################

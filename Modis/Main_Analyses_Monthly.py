@@ -17,7 +17,7 @@ import matplotlib.pylab as plt
 '''---------------------------------------------------------
 							Parameters
 ---------------------------------------------------------'''
-analyses_mode = "Growing" 
+analyses_mode = "Monthly" 
 LUC_Type = [
 	"Evergreen Forest",
 	"Deciduous Forest", 
@@ -472,7 +472,6 @@ columns = [
 	# "Water_to_Sparse",	# We ignore this conversions since the number of pixels including this conversion is less than 50
 	# "Water_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
 ]
-
 tmp_lst = lst_lulc.where(EF == 3, drop=True).values
 lst_EF_to_shrub = extract_vals(
 	orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
@@ -717,7 +716,6 @@ print(frames)
 """---------------------------------------------------------------------------
 					Analyzing energy vs. water limited 
 ------------------------------------------------------------------------------"""
-
 print('----------------- Working on the energy vs water limited -----------------\n')
 # class_name = ["High_WL", "Moderate_WL", "Low_WL", "Low_EL", "High_EL"]
 class_name = ["Water_Limited", "Energy_limited"]
@@ -818,7 +816,6 @@ text_file.close()
 # extract_wl_el(
 # 	orig_class=wetland, val=5, outname="Wetland_sparse_EL_WL.png"
 # )  # Not enough data
-
 
 """---------------------------------------------------------------------------
 

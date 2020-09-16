@@ -10,10 +10,7 @@ Months = ["Jan", "Feb", "Mar", "Apr","May", "Jun", "Jul", "Aug", "Sep", "Oct", "
 # ----------------- LST -------------------------------------
 in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Monthly_Mean/"
 out_dir = "/data/ABOVE/Final_data/LST_Final/LST/Monthly_Mean/"
-
 LST = xr.open_dataarray(in_dir + "lst_mean_month_resample.nc")
-LST = LST.rename({"lat": "y", "lon": "x"})
-
 month = LST.time.dt.month.values
 for i in np.arange(1, 13):
 	print(f"converting {i}")
@@ -25,7 +22,6 @@ for i in np.arange(1, 13):
 in_dir = "/data/ABOVE/Final_data/ET_Final/Monthly_ET/"
 out_dir = "/data/ABOVE/Final_data/ET_Final/Monthly_ET/"
 Et_comp = ["EC", "ET", "ES", "EW", "ET"]
-
 for k in Et_comp:
 	print(k)
 	da = xr.open_dataarray(in_dir + k + "_Monthly.nc")
@@ -37,3 +33,14 @@ for k in Et_comp:
 		a = np.where(month == i)[0]
 		tmp = da.isel(time=a)
 		tmp.to_netcdf(out_dir + "/" + k + "_Mean_" + Months[i - 1] + ".nc")
+
+# ----------------- Albedo -------------------------------------
+in_dir = "/data/ABOVE/Final_data/ALBEDO_Final/Monthly_Albedo/"
+out_dir = "/data/ABOVE/Final_data/ALBEDO_Final/Monthly_Albedo/"
+albedo = xr.open_dataarray(in_dir + "Albedo_month_resample.nc")
+month = albedo.time.dt.month.values
+for i in np.arange(1, 13):
+	print(f"converting {i}")
+	a = np.where(month == i)[0]
+	tmp = albedo.isel(time=a)
+	tmp.to_netcdf(out_dir + "/" + "Albedo_" + Months[i - 1] + ".nc")
