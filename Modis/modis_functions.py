@@ -139,9 +139,9 @@ def weighted_season_resmaple(ds):
 # -----------------------------------------------------------------------------------
 # This part is for plotting the percent cover chage vs. changes in LST, albedo, etc
 # -----------------------------------------------------------------------------------
-def reject_outliers(data, m=10):
+def reject_outliers(data, m):
+	# m is number of std
 	import numpy as np
-
 	data = data.astype(float)
 	data[abs(data - np.nanmean(data)) > m * np.nanstd(data)] = np.nan
 	return data
