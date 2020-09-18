@@ -17,7 +17,7 @@ import matplotlib.pylab as plt
 '''---------------------------------------------------------
 							Parameters
 ---------------------------------------------------------'''
-analyses_mode = "Monthly" 
+analyses_mode = "Growing" 
 LUC_Type = [
 	"Evergreen Forest",
 	"Deciduous Forest", 
@@ -32,14 +32,21 @@ LUC_Type = [
 							Prepare data
 ---------------------------------------------------------'''
 print('----------------- Preparing data -----------------\n')
-in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
-out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
-fig_dir = out_dir + "Main_Max_Change/Figures/"+analyses_mode+"/"
-
-if analyses_mode=="Growing":
+Months = ["Jan", "Feb", "Mar", "Apr","May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+i=0
+if analyses_mode == "Monthly":
+	print("Analyses mode is set to Growing, meaning we are working on the monthly data\n")
+	in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
+	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
+	fig_dir = out_dir + "Test/Figures/"+analyses_mode+"/"+Months[i]+'/'
+elif analyses_mode=="Growing":
 	print("Analyses mode is set to Growing, meaning we are working on the growing season (Apr-Nov; seven months)\n")
+	in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
+	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
+	fig_dir = out_dir + "Test/Figures/"+analyses_mode+"/"
 elif analyses_mode=="Annual":
 	print("Analyses mode is set to Annual, meaning we are working on the annual data (Jan-Dec)\n")
+
 print(f"Input directory:{in_dir}")
 print(f"Output directory:{out_dir}")
 print(f"Figure directory:{fig_dir}\n")
@@ -457,7 +464,7 @@ print('\n----------------- Working on the entire region (takes several minutes/h
 columns = [
 	"EF_to_Shrub",
 	# "EF_to_Herb", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
-	"EF_to_Sparse",
+	# "EF_to_Sparse",
 	# "DF_to_Shrub", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
 	"DF_to_Herb",
 	"DF_to_Sparse",
@@ -479,9 +486,9 @@ lst_EF_to_shrub = extract_vals(
 # lst_EF_to_herb = extract_vals(
 #     orig_class=EF, val=4, var="lst", conv_name="lst_EF_to_herb"
 # )
-lst_EF_to_sparse = extract_vals(
-	orig_class=EF, val=5, var="lst", conv_name="lst_EF_to_sparse"
-)
+# lst_EF_to_sparse = extract_vals(
+# 	orig_class=EF, val=5, var="lst", conv_name="lst_EF_to_sparse"
+# )
 
 # lst_DF_to_shrub = extract_vals(DF, 3, "lst", "lst_DF_to_shrub")
 lst_DF_to_herb = extract_vals(
@@ -530,7 +537,7 @@ lst_wetland_to_sparse = extract_vals(
 df_lst = pd.concat(
 	[
 		lst_EF_to_shrub,
-		lst_EF_to_sparse,
+		# lst_EF_to_sparse,
 		# lst_EF_to_herb,
 		# lst_DF_to_shrub,
 		lst_DF_to_herb,
@@ -561,7 +568,7 @@ myboxplot(
 
 albedo_EF_to_shrub = extract_vals(EF, 3, "albedo", "albedo_EF_to_shrub")
 # albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
-albedo_EF_to_sparse = extract_vals(EF, 5, "albedo", "albedo_EF_to_sparse")
+# albedo_EF_to_sparse = extract_vals(EF, 5, "albedo", "albedo_EF_to_sparse")
 
 # albedo_DF_to_shrub = extract_vals(DF, 3, "albedo", "albedo_DF_to_shrub")
 albedo_DF_to_herb = extract_vals(DF, 4, "albedo", "albedo_DF_to_herb")
@@ -588,7 +595,7 @@ df_albedo = pd.concat(
 	[
 		albedo_EF_to_shrub,
 		# albedo_EF_to_herb,
-		albedo_EF_to_sparse,
+		# albedo_EF_to_sparse,
 		# albedo_DF_to_shrub,
 		albedo_DF_to_herb,
 		albedo_DF_to_sparse,
@@ -618,7 +625,7 @@ myboxplot(
 
 ET_EF_to_shrub = extract_vals(EF, 3, "et", "ET_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-ET_EF_to_sparse = extract_vals(EF, 5, "et", "ET_EF_to_sparse")
+# ET_EF_to_sparse = extract_vals(EF, 5, "et", "ET_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 ET_DF_to_herb = extract_vals(DF, 4, "et", "ET_DF_to_herb")
@@ -643,7 +650,7 @@ df_et = pd.concat(
 	[
 		ET_EF_to_shrub,
 		# ET_EF_to_herb,
-		ET_EF_to_sparse,
+		# ET_EF_to_sparse,
 		# ET_DF_to_shrub,
 		ET_DF_to_herb,
 		ET_DF_to_sparse,
@@ -719,7 +726,7 @@ print(frames)
 print('----------------- Working on the energy vs water limited -----------------\n')
 # class_name = ["High_WL", "Moderate_WL", "Low_WL", "Low_EL", "High_EL"]
 class_name = ["Water_Limited", "Energy_limited"]
-
+'''
 print("Extracting EF to Sparse energy vs. water limited LST, albedo and ET\n")
 # EF to sparse conversion which we have enough data for EL_EL analyses
 lst_EL_WL, albedo_EL_WL, et_EL_WL = extract_wl_el(
@@ -758,7 +765,7 @@ with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
     )
     print(ef_sparse_el_wl_df, file=text_file)
 text_file.close()
-
+'''
 # extract_wl_el(orig_class=EF, val=3, outname="EF_shrub_EL_WL.png")  # Not enough data
 # extract_wl_el(orig_class=DF, val=5, outname="DF_sparse_EL_WL.png")  # Not enough data
 # extract_wl_el(orig_class=DF, val=4, outname="DF_herb_EL_WL.png")  # Not enough data
@@ -825,7 +832,7 @@ text_file.close()
 print('----------------- Plotting ET component -----------------\n')
 EC_EF_to_shrub = extract_vals(EF, 3, "ec", "EC_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-EC_EF_to_sparse = extract_vals(EF, 5, "ec", "EC_EF_to_sparse")
+# EC_EF_to_sparse = extract_vals(EF, 5, "ec", "EC_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 EC_DF_to_herb = extract_vals(DF, 4, "ec", "EC_DF_to_herb")
@@ -850,7 +857,7 @@ df_ec = pd.concat(
 	[
 		EC_EF_to_shrub,
 		# ET_EF_to_herb,
-		EC_EF_to_sparse,
+		# EC_EF_to_sparse,
 		# ET_DF_to_shrub,
 		EC_DF_to_herb,
 		EC_DF_to_sparse,
@@ -882,7 +889,7 @@ myboxplot(
 
 ES_EF_to_shrub = extract_vals(EF, 3, "es", "ES_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-ES_EF_to_sparse = extract_vals(EF, 5, "es", "ES_EF_to_sparse")
+# ES_EF_to_sparse = extract_vals(EF, 5, "es", "ES_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 ES_DF_to_herb = extract_vals(DF, 4, "es", "ES_DF_to_herb")
@@ -907,7 +914,7 @@ df_es = pd.concat(
 	[
 		ES_EF_to_shrub,
 		# ET_EF_to_herb,
-		ES_EF_to_sparse,
+		# ES_EF_to_sparse,
 		# ET_DF_to_shrub,
 		ES_DF_to_herb,
 		ES_DF_to_sparse,
@@ -939,7 +946,7 @@ myboxplot(
 
 EW_EF_to_shrub = extract_vals(EF, 3, "ew", "EW_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-EW_EF_to_sparse = extract_vals(EF, 5, "ew", "EW_EF_to_sparse")
+# EW_EF_to_sparse = extract_vals(EF, 5, "ew", "EW_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 EW_DF_to_herb = extract_vals(DF, 4, "ew", "EW_DF_to_herb")
@@ -964,7 +971,7 @@ df_ew = pd.concat(
 	[
 		EW_EF_to_shrub,
 		# ET_EF_to_herb,
-		EW_EF_to_sparse,
+		# EW_EF_to_sparse,
 		# ET_DF_to_shrub,
 		EW_DF_to_herb,
 		EW_DF_to_sparse,
@@ -995,7 +1002,7 @@ myboxplot(
 
 ECI_EF_to_shrub = extract_vals(EF, 3, "eci", "ECI_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-ECI_EF_to_sparse = extract_vals(EF, 5, "eci", "ECI_EF_to_sparse")
+# ECI_EF_to_sparse = extract_vals(EF, 5, "eci", "ECI_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 ECI_DF_to_herb = extract_vals(DF, 4, "eci", "ECI_DF_to_herb")
@@ -1020,7 +1027,7 @@ df_eci = pd.concat(
 	[
 		ECI_EF_to_shrub,
 		# ET_EF_to_herb,
-		ECI_EF_to_sparse,
+		# ECI_EF_to_sparse,
 		# ET_DF_to_shrub,
 		ECI_DF_to_herb,
 		ECI_DF_to_sparse,
@@ -1051,7 +1058,7 @@ myboxplot(
 
 ESW_EF_to_shrub = extract_vals(EF, 3, "esw", "ESW_EF_to_shrub")
 # ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-ESW_EF_to_sparse = extract_vals(EF, 5, "esw", "ESW_EF_to_sparse")
+# ESW_EF_to_sparse = extract_vals(EF, 5, "esw", "ESW_EF_to_sparse")
 
 # ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
 ESW_DF_to_herb = extract_vals(DF, 4, "esw", "ESW_DF_to_herb")
@@ -1076,7 +1083,7 @@ df_esw = pd.concat(
 	[
 		ESW_EF_to_shrub,
 		# ET_EF_to_herb,
-		ESW_EF_to_sparse,
+		# ESW_EF_to_sparse,
 		# ET_DF_to_shrub,
 		ESW_DF_to_herb,
 		ESW_DF_to_sparse,
