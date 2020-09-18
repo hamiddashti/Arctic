@@ -427,7 +427,7 @@ if __name__ == "__main__":
 		# Matrix of distance of each pixel from the central pixel used in inverse
 		dist_m = dist_matrix(win_size, win_size)
 
-		def monthly_cal(k):
+		def monthly_cal(k,in_dir,out_dir,LUC_dir,Months,nband, years, win_size, dist_m):
 			# for k in list(range(0,12)):
 			print(f"Month ----> {Months[k]}")
 			LUC = xr.open_dataarray(LUC_dir + "LULC_2003_2014.nc")
@@ -448,7 +448,7 @@ if __name__ == "__main__":
 		dask.config.set(scheduler="processes")
 		lazy_results = []
 		for k in np.arange(0, 12):
-			lazy_result = dask.delayed(monthly_cal)(k)
+			lazy_result = dask.delayed(monthly_cal)(k,in_dir,out_dir,LUC_dir,Months,nband, years, win_size, dist_m)
 			lazy_results.append(lazy_result)
 
 		from dask.diagnostics import ProgressBar
