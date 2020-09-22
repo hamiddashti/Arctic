@@ -17,7 +17,9 @@ import matplotlib.pylab as plt
 '''---------------------------------------------------------
 							Parameters
 ---------------------------------------------------------'''
-analyses_mode = "Growing" 
+analyses_mode = "Monthly"
+input_dir = '/data/ABOVE/Final_data/'
+output_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/' 
 LUC_Type = [
 	"Evergreen Forest",
 	"Deciduous Forest", 
@@ -27,134 +29,6 @@ LUC_Type = [
 	"Wetland",
 	"Water"
 	]
-
-'''---------------------------------------------------------
-							Prepare data
----------------------------------------------------------'''
-print('----------------- Preparing data -----------------\n')
-Months = ["Jan", "Feb", "Mar", "Apr","May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-i=0
-if analyses_mode == "Monthly":
-	print("Analyses mode is set to Growing, meaning we are working on the monthly data\n")
-	in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
-	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
-	fig_dir = out_dir + "Test/Figures/"+analyses_mode+"/"+Months[i]+'/'
-elif analyses_mode=="Growing":
-	print("Analyses mode is set to Growing, meaning we are working on the growing season (Apr-Nov; seven months)\n")
-	in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Data/"
-	out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
-	fig_dir = out_dir + "Test/Figures/"+analyses_mode+"/"
-elif analyses_mode=="Annual":
-	print("Analyses mode is set to Annual, meaning we are working on the annual data (Jan-Dec)\n")
-
-print(f"Input directory:{in_dir}")
-print(f"Output directory:{out_dir}")
-print(f"Figure directory:{fig_dir}\n")
-
-print("Working on LST...")
-# importing LST (natural and LUC components)
-lst_lulc = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_changed_lulc_component.nc"
-)
-
-lst_nv = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_changed_nv_component.nc"
-)
-lst_diff_total = xr.open_dataarray(
-	out_dir
-	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/delta_lst_total.nc"
-)
-lst = (
-	xr.open_dataarray(in_dir +analyses_mode+"/"+analyses_mode+"_LST/lst_mean_"+analyses_mode+".nc") - 273.15
-)  # kelvin to C
-lst = lst.sel(year=slice("2003", "2014"))
-lst = lst.rename({"lat": "y", "lon": "x"})
-
-print("Working on albedo...")
-albedo = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_Albedo/Albedo_"+analyses_mode+".nc")
-albedo = albedo.sel(year=slice("2003", "2014"))
-albedo_diff = albedo.diff("year")
-
-print("Working on ET and its components...\n")
-EC = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EC_"+analyses_mode+".nc") # Vegetation transpiration
-EI = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EI_"+analyses_mode+".nc") # Vegetation transpiration
-ES = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/ES_"+analyses_mode+".nc") # Vegetation transpiration
-EW = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/EW_"+analyses_mode+".nc") # Vegetation transpiration
-ET = xr.open_dataarray(in_dir + analyses_mode+"/"+analyses_mode+"_ET/ET_"+analyses_mode+".nc") # Vegetation transpiration
-EC = EC.fillna(0)
-EI = EI.fillna(0)
-ES = ES.fillna(0)
-EW = EW.fillna(0)
-
-ECI = EC + EI  # canopy evapotranspiration
-ESW = ES + EW  # soil/water/ice/snow evaporation
-
-EC = EC.where(EC != 0)  # Convert zeros to nan
-EI = EI.where(EI != 0)
-ES = ES.where(ES != 0)
-EW = EW.where(EW != 0)
-ET = ET.where(ET != 0)
-ECI = ECI.where(ECI != 0)
-ESW = ESW.where(ESW != 0)
-#Take the difference in ET 
-EC_diff = EC.diff("year")
-EI_diff = EI.diff("year")
-ES_diff = ES.diff("year")
-EW_diff = EW.diff("year")
-ET_diff = ET.diff("year")
-ECI_diff = ECI.diff("year")
-ESW_diff = ESW.diff("year")
-
-# EW.isel(year=1).to_netcdf(out_dir+"test2_ew.nc")
-# This is a netcdf file that shows all the extreme conversions calculated using the "Max_Change_Analyses.py"
-conversions = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions_Table.nc"
-)
-
-conversions_sum = conversions.sum("year")
-conversions_sum = pd.DataFrame(data = conversions_sum.values,index = LUC_Type,columns=LUC_Type)
-
-with open(out_dir +analyses_mode+"_report.txt", "w") as text_file:
-    print("Number of pixles undergone extreme conversion. Rows/columns are\
- classes before/after conversion (Table XXXX in the paper):",
-        file=text_file,
-    )
-    print(conversions_sum, file=text_file)
-text_file.close()
-print("Number of pixles undergone extreme conversion. Rows/columns are\
- classes before/after conversion (Table XXXX in the paper):")
-print(conversions_sum)
-
-# Calling the results of the Max_Changed_Analyses.py
-EF = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/EF_to_other.nc"
-)
-shrub = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/shrub_to_other.nc"
-)
-herb = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/herb_to_other.nc"
-)
-sparse = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/sparse_to_other.nc"
-)
-wetland = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/wetland_to_other.nc"
-)
-water = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/water_to_other.nc"
-)
-DF = xr.open_dataarray(
-	out_dir + "LUC_Change_Extracted/LUC_max_conversions/DF_to_other.nc"
-)
-
-# This is the map of water_energy limited areas with two classes
-WL_EL = xr.open_dataarray(
-	in_dir + "Water_Energy_Limited/Tif/WL_EL_Reclassified_reproject.nc"
-)
-WL_EL = WL_EL.squeeze() 
 
 '''----------------------------------------------------------------------------
 					Functions used in various part of teh script
@@ -287,7 +161,7 @@ def myboxplot_group(df1, df2, df3, columns, txt_pos, outname):
 	res1 = ax1.boxplot(
 		filtered_df1,
 		widths=widths,
-		positions=np.arange(len(columns)) - 0.31,
+		positions=np.arange(len(df1['df'].columns)) - 0.31,
 		patch_artist=True,
 	)
 	for element in ["boxes", "whiskers", "fliers", "means", "medians", "caps"]:
@@ -332,7 +206,7 @@ def myboxplot_group(df1, df2, df3, columns, txt_pos, outname):
 	filtered_df2 = make_mask(df2["df"].values)
 	res2 = ax2.boxplot(
 		filtered_df2,
-		positions=np.arange(len(columns)) + 0,
+		positions=np.arange(len(df2['df'].columns)) + 0,
 		widths=widths,
 		patch_artist=True,
 	)
@@ -353,7 +227,7 @@ def myboxplot_group(df1, df2, df3, columns, txt_pos, outname):
 	filtered_df3 = make_mask(df3["df"].values)
 	res3 = ax3.boxplot(
 		filtered_df3,
-		positions=np.arange(len(columns)) + 0.31,
+		positions=np.arange(len(df3['df'].columns)) + 0.31,
 		widths=widths,
 		patch_artist=True,
 	)
@@ -362,16 +236,16 @@ def myboxplot_group(df1, df2, df3, columns, txt_pos, outname):
 		plt.setp(res3[element], color="k")
 	for patch in res3["boxes"]:
 		patch.set_facecolor("tab:green")
-	ax1.set_xlim([-0.55, len(columns) - 0.25])
-	ax1.set_xticks(np.arange(len(columns)))
-	ax1.set_xticklabels(columns, rotation=50, fontsize=11)
+	ax1.set_xlim([-0.55, len(df1['df'].columns) - 0.25])
+	ax1.set_xticks(np.arange(len(df1['df'].columns)))
+	ax1.set_xticklabels(df1['df'].columns, rotation=50, fontsize=11)
 	ax1.yaxis.grid(False)
 	ax1.axhline(color="k")
 	fig.tight_layout()  # otherwise the right y-label is slightly clipped
 	plt.savefig(fig_dir + outname)
 	plt.close()
 
-def ELvsWL(var, orig_class, val, WL_EL_class):
+def ELvsWL(var, orig_class, val, WL_EL_class,class_name):
 	'''
 	var --------->	Name of variable to be extracted (lst, albedo)
 	orig_class -->	Name of the conversion (EF, DF, shrub etc)
@@ -386,7 +260,7 @@ def ELvsWL(var, orig_class, val, WL_EL_class):
 			).values
 			tmp = tmp_lst[~np.isnan(tmp_lst)]
 			tmp_df = pd.DataFrame({class_name[WL_EL_class - 1]: tmp})
-		except ValueError:
+		except (ValueError,IndexError):
 			# tmp_df = pd.DataFrame({class_name[WL_EL_class-1]: np.nan})
 			tmp_df = pd.DataFrame(
 				np.nan, index=[0], columns=[class_name[WL_EL_class - 1]]
@@ -394,12 +268,15 @@ def ELvsWL(var, orig_class, val, WL_EL_class):
 	# 	return tmp_df
 	if var == "albedo":
 		try:
+			tmp_lst = lst_lulc.where(
+				(orig_class == val) & (WL_EL == WL_EL_class), drop=True
+			).values
 			tmp_albedo = albedo_diff.where(
 				(orig_class == val) & (WL_EL == WL_EL_class), drop=True
 			).values
-			tmp = tmp_albedo[~np.isnan(tmp_albedo)]
+			tmp = tmp_albedo[~np.isnan(tmp_lst)]
 			tmp_df = pd.DataFrame({class_name[WL_EL_class - 1]: tmp})
-		except ValueError:
+		except (ValueError,IndexError):
 			# tmp_df = pd.DataFrame({class_name[WL_EL_class-1]: np.nan})
 			tmp_df = pd.DataFrame(
 				np.nan, index=[0], columns=[class_name[WL_EL_class - 1]]
@@ -408,26 +285,29 @@ def ELvsWL(var, orig_class, val, WL_EL_class):
 
 	if var == "et":
 		try:
+			tmp_lst = lst_lulc.where(
+				(orig_class == val) & (WL_EL == WL_EL_class), drop=True
+			).values
 			tmp_et = ET_diff.where(
 				(orig_class == val) & (WL_EL == WL_EL_class), drop=True
 			).values
-			tmp = tmp_et[~np.isnan(tmp_et)]
+			tmp = tmp_et[~np.isnan(tmp_lst)]
 			tmp_df = pd.DataFrame({class_name[WL_EL_class - 1]: tmp})
-		except ValueError:
+		except (ValueError,IndexError):
 			# tmp_df = pd.DataFrame({class_name[WL_EL_class-1]: np.nan})
 			tmp_df = pd.DataFrame(
 				np.nan, index=[0], columns=[class_name[WL_EL_class - 1]]
 			)
 	# 	return tmp_df
 	return tmp_df
-def extract_wl_el(orig_class, val):
+def extract_wl_el(orig_class, val,class_name):
 	lst_EL_WL = []
 	albedo_EL_WL = []
 	et_EL_WL = []
 	for i in np.arange(1, 3):
-		print(i)
+		print(f"Working on {class_name[i-1]}")
 
-		df_lst = ELvsWL(var="lst", orig_class=orig_class, val=val, WL_EL_class=i)
+		df_lst = ELvsWL(var="lst", orig_class=orig_class, val=val, WL_EL_class=i,class_name=class_name)
 
 		# if number of pixles are less than 25 (25% of the 100 minimum)
 		# we ignore the EL_WL analysis in the LUC conversion
@@ -439,9 +319,9 @@ def extract_wl_el(orig_class, val):
 
 		else:
 			df_albedo = ELvsWL(
-				var="albedo", orig_class=orig_class, val=val, WL_EL_class=i
+				var="albedo", orig_class=orig_class, val=val, WL_EL_class=i,class_name=class_name
 			)
-			df_et = ELvsWL(var="et", orig_class=orig_class, val=val, WL_EL_class=i)
+			df_et = ELvsWL(var="et", orig_class=orig_class, val=val, WL_EL_class=i,class_name=class_name)
 			lst_EL_WL.append(
 				pd.Series(df_lst[class_name[i - 1]], name=class_name[i - 1])
 			)
@@ -454,701 +334,942 @@ def extract_wl_el(orig_class, val):
 	albedo_EL_WL = pd.concat(albedo_EL_WL, axis=1)
 	et_EL_WL = pd.concat(et_EL_WL, axis=1)
 	return lst_EL_WL, albedo_EL_WL, et_EL_WL
+def Main_Analyses(EF,shrub,herb,sparse,wetland,water,WL_EL,lst_lulc,lst_diff_total,albedo_diff,EC_diff,EI_diff,ES_diff,EW_diff,ET_diff,ECI_diff,ESW_diff,conversions):
+	""" ---------------------------------------------------------------------
+	Regional analyses: The main criteria is that a LUC should include more 
+	than 50 pixels that we can make robust conclusions 
+	----------------------------------------------------------------------"""
 
-""" ---------------------------------------------------------------------
-Regional analyses: The main criteria is that a LUC should include more 
-than 50 pixels that we can make robust conclusions 
-----------------------------------------------------------------------"""
+	print('\n----------------- Working on the entire region (takes several minutes/hours) -----------------\n')
+	columns = [
+		"EF_to_Shrub",
+		# "EF_to_Herb", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
+		# "EF_to_Sparse",
+		# "DF_to_Shrub", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
+		"DF_to_Herb",
+		"DF_to_Sparse",
+		"Shrub_to_Sparse",
+		# "Shrub_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
+		"Herb_to_Shrub",
+		"Herb_to_Sparse",
+		# "Herb_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
+		"Sparse_to_Shrub",
+		"Sparse_to_Herb",
+		"Wetland_to_Sparse",
+		# "Water_to_Sparse",	# We ignore this conversions since the number of pixels including this conversion is less than 50
+		# "Water_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
+	]
 
-print('\n----------------- Working on the entire region (takes several minutes/hours) -----------------\n')
-columns = [
-	"EF_to_Shrub",
-	# "EF_to_Herb", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
-	# "EF_to_Sparse",
-	# "DF_to_Shrub", 		# We ignore this conversions since the number of pixels including this conversion is less than 50
-	"DF_to_Herb",
-	"DF_to_Sparse",
-	"Shrub_to_Sparse",
-	# "Shrub_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
-	"Herb_to_Shrub",
-	"Herb_to_Sparse",
-	# "Herb_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
-	"Sparse_to_Shrub",
-	"Sparse_to_Herb",
-	"Wetland_to_Sparse",
-	# "Water_to_Sparse",	# We ignore this conversions since the number of pixels including this conversion is less than 50
-	# "Water_to_Wetland",	# We ignore this conversions since the number of pixels including this conversion is less than 50
-]
-tmp_lst = lst_lulc.where(EF == 3, drop=True).values
-lst_EF_to_shrub = extract_vals(
-	orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
-)
-# lst_EF_to_herb = extract_vals(
-#     orig_class=EF, val=4, var="lst", conv_name="lst_EF_to_herb"
-# )
-# lst_EF_to_sparse = extract_vals(
-# 	orig_class=EF, val=5, var="lst", conv_name="lst_EF_to_sparse"
-# )
+	lst_EF_to_shrub = extract_vals(
+		orig_class=EF, val=3, var="lst", conv_name="lst_EF_to_shrub"
+	)
 
-# lst_DF_to_shrub = extract_vals(DF, 3, "lst", "lst_DF_to_shrub")
-lst_DF_to_herb = extract_vals(
-	orig_class=DF, val=4, var="lst", conv_name="lst_DF_to_herb"
-)
-lst_DF_to_sparse = extract_vals(
-	orig_class=DF, val=5, var="lst", conv_name="lst_DF_to_sparse"
-)
+	# lst_EF_to_herb = extract_vals(
+	#     orig_class=EF, val=4, var="lst", conv_name="lst_EF_to_herb"
+	# )
+	# lst_EF_to_sparse = extract_vals(
+	# 	orig_class=EF, val=5, var="lst", conv_name="lst_EF_to_sparse"
+	# )
 
-lst_shrub_to_sparse = extract_vals(
-	orig_class=shrub, val=5, var="lst", conv_name="lst_shrub_to_sparse"
-)
-# lst_shrub_to_wetland = extract_vals(
-#     orig_class=shrub, val=6, var="lst", conv_name="lst_shrub_to_wetland"
-# )
+	# lst_DF_to_shrub = extract_vals(DF, 3, "lst", "lst_DF_to_shrub")
+	lst_DF_to_herb = extract_vals(
+		orig_class=DF, val=4, var="lst", conv_name="lst_DF_to_herb"
+	)
+	lst_DF_to_sparse = extract_vals(
+		orig_class=DF, val=5, var="lst", conv_name="lst_DF_to_sparse"
+	)
 
-lst_herb_to_shrub = extract_vals(
-	orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
-)
-lst_herb_to_sparse = extract_vals(
-	orig_class=herb, val=5, var="lst", conv_name="lst_herb_to_sparse"
-)
-# lst_herb_to_wetland = extract_vals(
-#     orig_class=herb, val=6, var="lst", conv_name="lst_herb_to_wetland"
-# )
+	lst_shrub_to_sparse = extract_vals(
+		orig_class=shrub, val=5, var="lst", conv_name="lst_shrub_to_sparse"
+	)
+	# lst_shrub_to_wetland = extract_vals(
+	#     orig_class=shrub, val=6, var="lst", conv_name="lst_shrub_to_wetland"
+	# )
 
-lst_sparse_to_shrub = extract_vals(
-	orig_class=sparse, val=3, var="lst", conv_name="lst_sparse_to_shrub"
-)
-lst_sparse_to_herb = extract_vals(
-	orig_class=sparse, val=4, var="lst", conv_name="lst_sparse_to_herb"
-)
-# lst_sparse_to_water = extract_vals(orig_class=sparse,val= 7,var= "lst",conv_name= "lst_sparse_to_water")
+	lst_herb_to_shrub = extract_vals(
+		orig_class=herb, val=3, var="lst", conv_name="lst_herb_to_shrub"
+	)
+	lst_herb_to_sparse = extract_vals(
+		orig_class=herb, val=5, var="lst", conv_name="lst_herb_to_sparse"
+	)
+	# lst_herb_to_wetland = extract_vals(
+	#     orig_class=herb, val=6, var="lst", conv_name="lst_herb_to_wetland"
+	# )
 
-lst_wetland_to_sparse = extract_vals(
-	orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
-)
+	lst_sparse_to_shrub = extract_vals(
+		orig_class=sparse, val=3, var="lst", conv_name="lst_sparse_to_shrub"
+	)
+	lst_sparse_to_herb = extract_vals(
+		orig_class=sparse, val=4, var="lst", conv_name="lst_sparse_to_herb"
+	)
+	# lst_sparse_to_water = extract_vals(orig_class=sparse,val= 7,var= "lst",conv_name= "lst_sparse_to_water")
 
-# lst_water_to_sparse = extract_vals(
-#     orig_class=water, val=5, var="lst", conv_name="lst_water_to_sparse"
-# )
-# lst_water_to_wetland = extract_vals(
-#     orig_class=water, val=6, var="lst", conv_name="lst_water_to_wetland"
-# )
+	lst_wetland_to_sparse = extract_vals(
+		orig_class=wetland, val=5, var="lst", conv_name="lst_wetland_to_sparse"
+	)
 
-df_lst = pd.concat(
-	[
-		lst_EF_to_shrub,
-		# lst_EF_to_sparse,
-		# lst_EF_to_herb,
-		# lst_DF_to_shrub,
-		lst_DF_to_herb,
-		lst_DF_to_sparse,
-		lst_shrub_to_sparse,
-		# lst_shrub_to_wetland,
-		lst_herb_to_shrub,
-		lst_herb_to_sparse,
-		# lst_herb_to_wetland,
-		lst_sparse_to_shrub,
-		lst_sparse_to_herb,
-		lst_wetland_to_sparse,
-		# lst_water_to_sparse,
-		# lst_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-df_lst.columns = columns
-print(f"saving LST_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_lst,
-	title="LST",
-	ylabel="$\Delta$ LST [C]",
-	margin=0.3,
-	outname="LST_Boxplot.png",
-)
+	# lst_water_to_sparse = extract_vals(
+	#     orig_class=water, val=5, var="lst", conv_name="lst_water_to_sparse"
+	# )
+	# lst_water_to_wetland = extract_vals(
+	#     orig_class=water, val=6, var="lst", conv_name="lst_water_to_wetland"
+	# )
 
-albedo_EF_to_shrub = extract_vals(EF, 3, "albedo", "albedo_EF_to_shrub")
-# albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
-# albedo_EF_to_sparse = extract_vals(EF, 5, "albedo", "albedo_EF_to_sparse")
+	df_lst = pd.concat(
+		[
+			lst_EF_to_shrub,
+			# lst_EF_to_sparse,
+			# lst_EF_to_herb,
+			# lst_DF_to_shrub,
+			lst_DF_to_herb,
+			lst_DF_to_sparse,
+			lst_shrub_to_sparse,
+			# lst_shrub_to_wetland,
+			lst_herb_to_shrub,
+			lst_herb_to_sparse,
+			# lst_herb_to_wetland,
+			lst_sparse_to_shrub,
+			lst_sparse_to_herb,
+			lst_wetland_to_sparse,
+			# lst_water_to_sparse,
+			# lst_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_lst.columns = columns
+	idx = df_lst.count()>50
+	df_lst = df_lst[idx.index[idx]]
+	print(f"saving LST_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_lst,
+		title="LST",
+		ylabel="$\Delta$ LST [C]",
+		margin=0.3,
+		outname="LST_Boxplot.png",
+	)
 
-# albedo_DF_to_shrub = extract_vals(DF, 3, "albedo", "albedo_DF_to_shrub")
-albedo_DF_to_herb = extract_vals(DF, 4, "albedo", "albedo_DF_to_herb")
-albedo_DF_to_sparse = extract_vals(DF, 5, "albedo", "albedo_DF_to_sparse")
 
-albedo_shrub_to_sparse = extract_vals(shrub, 5, "albedo", "albedo_shrub_to_sparse")
-# albedo_shrub_to_wetland = extract_vals(shrub, 6, "albedo", "albedo_shrub_to_wetland")
+	albedo_EF_to_shrub = extract_vals(EF, 3, "albedo", "albedo_EF_to_shrub")
+	# albedo_EF_to_herb = extract_vals(EF, 4, "albedo", "albedo_EF_to_herb")
+	# albedo_EF_to_sparse = extract_vals(EF, 5, "albedo", "albedo_EF_to_sparse")
 
-albedo_herb_to_shrub = extract_vals(herb, 3, "albedo", "albedo_herb_to_shrub")
-albedo_herb_to_sparse = extract_vals(herb, 5, "albedo", "albedo_herb_to_sparse")
-# albedo_herb_to_wetland = extract_vals(herb, 6, "albedo", "albedo_herb_to_wetland")
+	# albedo_DF_to_shrub = extract_vals(DF, 3, "albedo", "albedo_DF_to_shrub")
+	albedo_DF_to_herb = extract_vals(DF, 4, "albedo", "albedo_DF_to_herb")
+	albedo_DF_to_sparse = extract_vals(DF, 5, "albedo", "albedo_DF_to_sparse")
 
-albedo_sparse_to_shrub = extract_vals(sparse, 3, "albedo", "albedo_sparse_to_shrub")
-albedo_sparse_to_herb = extract_vals(sparse, 4, "albedo", "albedo_sparse_to_herb")
+	albedo_shrub_to_sparse = extract_vals(shrub, 5, "albedo", "albedo_shrub_to_sparse")
+	# albedo_shrub_to_wetland = extract_vals(shrub, 6, "albedo", "albedo_shrub_to_wetland")
 
-albedo_wetland_to_sparse = extract_vals(
-	wetland, 5, "albedo", "albedo_wetland_to_sparse"
-)
+	albedo_herb_to_shrub = extract_vals(herb, 3, "albedo", "albedo_herb_to_shrub")
+	albedo_herb_to_sparse = extract_vals(herb, 5, "albedo", "albedo_herb_to_sparse")
+	# albedo_herb_to_wetland = extract_vals(herb, 6, "albedo", "albedo_herb_to_wetland")
 
-# albedo_water_to_sparse = extract_vals(water, 5, "albedo", "albedo_water_to_sparse")
-# albedo_water_to_wetland = extract_vals(water, 6, "albedo", "albedo_water_to_wetland")
+	albedo_sparse_to_shrub = extract_vals(sparse, 3, "albedo", "albedo_sparse_to_shrub")
+	albedo_sparse_to_herb = extract_vals(sparse, 4, "albedo", "albedo_sparse_to_herb")
 
-df_albedo = pd.concat(
-	[
-		albedo_EF_to_shrub,
-		# albedo_EF_to_herb,
-		# albedo_EF_to_sparse,
-		# albedo_DF_to_shrub,
-		albedo_DF_to_herb,
-		albedo_DF_to_sparse,
-		albedo_shrub_to_sparse,
-		# albedo_shrub_to_wetland,
-		albedo_herb_to_shrub,
-		albedo_herb_to_sparse,
-		# albedo_herb_to_wetland,
-		albedo_sparse_to_shrub,
-		albedo_sparse_to_herb,
-		albedo_wetland_to_sparse,
-		# albedo_water_to_sparse,
-		# albedo_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-df_albedo.columns = columns
-print(f"saving Albedo_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_albedo,
-	title="Albedo",
-	ylabel="$\Delta$ Albedo",
-	margin=0.005,
-	outname="Albedo_boxplot.png",
-)
+	albedo_wetland_to_sparse = extract_vals(
+		wetland, 5, "albedo", "albedo_wetland_to_sparse"
+	)
 
-ET_EF_to_shrub = extract_vals(EF, 3, "et", "ET_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# ET_EF_to_sparse = extract_vals(EF, 5, "et", "ET_EF_to_sparse")
+	# albedo_water_to_sparse = extract_vals(water, 5, "albedo", "albedo_water_to_sparse")
+	# albedo_water_to_wetland = extract_vals(water, 6, "albedo", "albedo_water_to_wetland")
 
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-ET_DF_to_herb = extract_vals(DF, 4, "et", "ET_DF_to_herb")
-ET_DF_to_sparse = extract_vals(DF, 5, "et", "ET_DF_to_sparse")
+	df_albedo = pd.concat(
+		[
+			albedo_EF_to_shrub,
+			# albedo_EF_to_herb,
+			# albedo_EF_to_sparse,
+			# albedo_DF_to_shrub,
+			albedo_DF_to_herb,
+			albedo_DF_to_sparse,
+			albedo_shrub_to_sparse,
+			# albedo_shrub_to_wetland,
+			albedo_herb_to_shrub,
+			albedo_herb_to_sparse,
+			# albedo_herb_to_wetland,
+			albedo_sparse_to_shrub,
+			albedo_sparse_to_herb,
+			albedo_wetland_to_sparse,
+			# albedo_water_to_sparse,
+			# albedo_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_albedo.columns = columns
+	idx = df_albedo.count()>50
+	df_albedo = df_albedo[idx.index[idx]]
+	print(f"saving Albedo_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_albedo,
+		title="Albedo",
+		ylabel="$\Delta$ Albedo",
+		margin=0.005,
+		outname="Albedo_boxplot.png",
+	)
 
-ET_shrub_to_sparse = extract_vals(shrub, 5, "et", "ET_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+	ET_EF_to_shrub = extract_vals(EF, 3, "et", "ET_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# ET_EF_to_sparse = extract_vals(EF, 5, "et", "ET_EF_to_sparse")
 
-ET_herb_to_shrub = extract_vals(herb, 3, "et", "ET_herb_to_shrub")
-ET_herb_to_sparse = extract_vals(herb, 5, "et", "ET_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	ET_DF_to_herb = extract_vals(DF, 4, "et", "ET_DF_to_herb")
+	ET_DF_to_sparse = extract_vals(DF, 5, "et", "ET_DF_to_sparse")
 
-ET_sparse_to_shrub = extract_vals(sparse, 3, "et", "ET_sparse_to_shrub")
-ET_sparse_to_herb = extract_vals(sparse, 4, "et", "ET_sparse_to_herb")
+	ET_shrub_to_sparse = extract_vals(shrub, 5, "et", "ET_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
 
-ET_wetland_to_sparse = extract_vals(wetland, 5, "et", "ET_wetland_to_sparse")
+	ET_herb_to_shrub = extract_vals(herb, 3, "et", "ET_herb_to_shrub")
+	ET_herb_to_sparse = extract_vals(herb, 5, "et", "ET_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
 
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+	ET_sparse_to_shrub = extract_vals(sparse, 3, "et", "ET_sparse_to_shrub")
+	ET_sparse_to_herb = extract_vals(sparse, 4, "et", "ET_sparse_to_herb")
 
-df_et = pd.concat(
-	[
-		ET_EF_to_shrub,
-		# ET_EF_to_herb,
-		# ET_EF_to_sparse,
-		# ET_DF_to_shrub,
-		ET_DF_to_herb,
-		ET_DF_to_sparse,
-		ET_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		ET_herb_to_shrub,
-		ET_herb_to_sparse,
-		# ET_herb_to_wetland,
-		ET_sparse_to_shrub,
-		ET_sparse_to_herb,
-		ET_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
+	ET_wetland_to_sparse = extract_vals(wetland, 5, "et", "ET_wetland_to_sparse")
 
-df_et.columns = columns
-print(f"saving ET_Boxplot.png in {fig_dir}")
-myboxplot(
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_et = pd.concat(
+		[
+			ET_EF_to_shrub,
+			# ET_EF_to_herb,
+			# ET_EF_to_sparse,
+			# ET_DF_to_shrub,
+			ET_DF_to_herb,
+			ET_DF_to_sparse,
+			ET_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			ET_herb_to_shrub,
+			ET_herb_to_sparse,
+			# ET_herb_to_wetland,
+			ET_sparse_to_shrub,
+			ET_sparse_to_herb,
+			ET_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_et.columns = columns
+	idx = df_et.count()>50
+	df_et = df_et[idx.index[idx]]
+	print(f"saving ET_Boxplot.png in {fig_dir}")
+	myboxplot(
+		
+		df=df_et,
+		title="ET",
+		ylabel="$\Delta$ ET [mm/year]",
+		margin=5,
+		outname="ET_boxplot.png",
+	)
+
+
+	df1 = {
+		"name": "LST",
+		"df": df_lst,
+		"label": "$\Delta$LST [C]",
+		"ylim": [-12, 12]
+		}
+	df2 = {
+		"name": "Albedo",
+		"df": df_albedo,
+		"label": "$\Delta$Albedo",
+		"ylim": [-0.5, 0.5],
+		}
+	df3 = {
+		"name": "ET",
+		"df": df_et, 
+		"label": "$\Delta$ET [mm/year]", 
+		"ylim": [-850, 850]
+		}
+	print(f"saving Boxplot_groups.png in {fig_dir}")
+
+	a = np.intersect1d(df1['df'].columns,df2['df'].columns)
+	b = np.intersect1d(a,df3['df'].columns)
+	if len(b)==0:
+		print("\nOooops! One of the dataset is empty! so we skip this month")
+		return
 	
-	df=df_et,
-	title="ET",
-	ylabel="$\Delta$ ET [mm/year]",
-	margin=5,
-	outname="ET_boxplot.png",
+	df1['df'] = df1['df'][list(b)]
+	df2['df'] = df2['df'][list(b)]
+	df3['df'] = df3['df'][list(b)]
+
+	myboxplot_group(df1, df2, df3, columns=columns, txt_pos=9, outname="Boxplot_groups.png")
+
+	df_lst_mean = df_lst.mean()
+	df_albedo_mean = df_albedo.mean()
+	df_et_mean = df_et.mean()
+	df_lst_std = df_lst.std()
+	df_albedo_std = df_albedo.std()
+	df_et_std = df_et.std()
+
+	frames = pd.concat([df_lst_mean,df_albedo_mean,df_et_mean,df_lst_std,df_albedo_std,df_et_std],axis=1)
+	frames.columns = ["LST Mean","Albedo Mean","ET Mean","LST STD","Albedo STD","ET STD"]
+
+	with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+		print("\n Mean and STD of the LST, albedo and ET aftr LUC conversion:",
+			file=text_file,
+		)
+		print(frames, file=text_file)
+	text_file.close()
+	print("\n Mean and STD of the LST, albedo and ET after LUC conversion:")
+	print(frames)
+
+	"""---------------------------------------------------------------------------
+						Analyzing energy vs. water limited 
+	------------------------------------------------------------------------------"""
+	print('----------------- Working on the energy vs water limited -----------------\n')
+	# class_name = ["High_WL", "Moderate_WL", "Low_WL", "Low_EL", "High_EL"]
+	class_name = ["Water_Limited", "Energy_limited"]
+	'''
+	print("Extracting EF to Sparse energy vs. water limited LST, albedo and ET\n")
+	# EF to sparse conversion which we have enough data for EL_EL analyses
+	lst_EL_WL, albedo_EL_WL, et_EL_WL = extract_wl_el(
+		orig_class=EF, val=5
+	)  # There are enough data
+	df1 = {"name": "LST", "df": lst_EL_WL, "label": "$\Delta$LST [C]", "ylim": [-12, 12]}
+	df2 = {
+		"name": "Albedo",
+		"df": albedo_EL_WL,
+		"label": "$\Delta$Albedo",
+		"ylim": [-0.5, 0.5],
+	}
+	df3 = {
+		"name": "ET",
+		"df": et_EL_WL,
+		"label": "$\Delta$ET [mm/year]",
+		"ylim": [-850, 850],
+	}
+	print(f"saving EF_sparse_EL_WL.png in {fig_dir}")
+	myboxplot_group(
+		df1, df2, df3, columns=class_name, txt_pos=9, outname="EF_sparse_EL_WL.png"
+	)
+	lst_mean=lst_EL_WL.mean()
+	albedo_mean=albedo_EL_WL.mean()
+	et_mean=et_EL_WL.mean()
+	lst_std=lst_EL_WL.std()
+	albedo_std=albedo_EL_WL.std()
+	et_std=et_EL_WL.std()
+
+	ef_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
+	ef_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
+
+	with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+		print("\n Mean and STD of water vs. energy limited LST, albedo and ET for EF to sparse conversion:",
+			file=text_file,
+		)
+		print(ef_sparse_el_wl_df, file=text_file)
+	text_file.close()
+	'''
+	# extract_wl_el(orig_class=EF, val=3, outname="EF_shrub_EL_WL.png")  # Not enough data
+	# extract_wl_el(orig_class=DF, val=5, outname="DF_sparse_EL_WL.png")  # Not enough data
+	# extract_wl_el(orig_class=DF, val=4, outname="DF_herb_EL_WL.png")  # Not enough data
+	# extract_wl_el(
+	# 	orig_class=shrub, val=5, outname="Shrub_sparse_EL_WL.png"
+	# )  # Not enough data
+
+	print("Extracting Herbaceous to Sparse energy vs. water limited LST, albedo and ET\n")
+	# Herb to sparse conversion which we have enought data to analyze
+	lst_EL_WL, albedo_EL_WL, et_EL_WL = extract_wl_el(
+		orig_class=herb, val=5,class_name=class_name
+	)  # There are enough data
+
+	df1 = {"name": "LST", "df": lst_EL_WL, "label": "$\Delta$LST [C]", "ylim": [-12, 12]}
+	df2 = {
+		"name": "Albedo",
+		"df": albedo_EL_WL,
+		"label": "$\Delta$Albedo",
+		"ylim": [-0.5, 0.5],
+	}
+	df3 = {
+		"name": "ET",
+		"df": et_EL_WL,
+		"label": "$\Delta$ET [mm/year]",
+		"ylim": [-850, 850],
+	}
+	
+
+	print(f"saving Herb_sparse_EL_WL.png in {fig_dir} \n")
+	myboxplot_group(
+		df1, df2, df3, columns=class_name, txt_pos=9, outname="Herb_sparse_EL_WL.png"
+	)
+
+	lst_mean=lst_EL_WL.mean()
+	albedo_mean=albedo_EL_WL.mean()
+	et_mean=et_EL_WL.mean()
+	lst_std=lst_EL_WL.std()
+	albedo_std=albedo_EL_WL.std()
+	et_std=et_EL_WL.std()
+
+	herb_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
+	herb_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
+
+	with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+		print("\n Mean and STD of water vs. energy limited LST, albedo and ET for herb to sparse conversion:",
+			file=text_file,
+		)
+		print(herb_sparse_el_wl_df, file=text_file)
+	text_file.close()
+
+	# extract_wl_el(
+	# 	orig_class=sparse, val=3, outname="Sparse_shrub_EL_WL.png"
+	# )  # Not enough data
+	# extract_wl_el(
+	# 	orig_class=sparse, val=4, outname="Sparse_herb_EL_WL.png"
+	# )  # Not enough data
+	# extract_wl_el(
+	# 	orig_class=wetland, val=5, outname="Wetland_sparse_EL_WL.png"
+	# )  # Not enough data
+
+	"""---------------------------------------------------------------------------
+
+						Now we focus on different components of the ET 
+
+	------------------------------------------------------------------------------"""
+	print('----------------- Plotting ET component -----------------\n')
+	EC_EF_to_shrub = extract_vals(EF, 3, "ec", "EC_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# EC_EF_to_sparse = extract_vals(EF, 5, "ec", "EC_EF_to_sparse")
+
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	EC_DF_to_herb = extract_vals(DF, 4, "ec", "EC_DF_to_herb")
+	EC_DF_to_sparse = extract_vals(DF, 5, "ec", "EC_DF_to_sparse")
+
+	EC_shrub_to_sparse = extract_vals(shrub, 5, "ec", "EC_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+
+	EC_herb_to_shrub = extract_vals(herb, 3, "ec", "EC_herb_to_shrub")
+	EC_herb_to_sparse = extract_vals(herb, 5, "ec", "EC_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+
+	EC_sparse_to_shrub = extract_vals(sparse, 3, "ec", "EC_sparse_to_shrub")
+	EC_sparse_to_herb = extract_vals(sparse, 4, "ec", "EC_sparse_to_herb")
+
+	EC_wetland_to_sparse = extract_vals(wetland, 5, "ec", "EC_wetland_to_sparse")
+
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_ec = pd.concat(
+		[
+			EC_EF_to_shrub,
+			# ET_EF_to_herb,
+			# EC_EF_to_sparse,
+			# ET_DF_to_shrub,
+			EC_DF_to_herb,
+			EC_DF_to_sparse,
+			EC_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			EC_herb_to_shrub,
+			EC_herb_to_sparse,
+			# ET_herb_to_wetland,
+			EC_sparse_to_shrub,
+			EC_sparse_to_herb,
+			EC_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_ec.columns = columns
+	idx = df_ec.count()>50
+	df_ec = df_ec[idx.index[idx]]
+	print(f"saving EC_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_ec,
+		title="EC",
+		ylabel="EC [mm $year^{-1}$]",
+		margin=5,
+		outname="EC_Boxplot.png",
+	)
+
+
+	ES_EF_to_shrub = extract_vals(EF, 3, "es", "ES_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# ES_EF_to_sparse = extract_vals(EF, 5, "es", "ES_EF_to_sparse")
+
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	ES_DF_to_herb = extract_vals(DF, 4, "es", "ES_DF_to_herb")
+	ES_DF_to_sparse = extract_vals(DF, 5, "es", "ES_DF_to_sparse")
+
+	ES_shrub_to_sparse = extract_vals(shrub, 5, "es", "ES_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+
+	ES_herb_to_shrub = extract_vals(herb, 3, "es", "ES_herb_to_shrub")
+	ES_herb_to_sparse = extract_vals(herb, 5, "es", "ES_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+
+	ES_sparse_to_shrub = extract_vals(sparse, 3, "es", "ES_sparse_to_shrub")
+	ES_sparse_to_herb = extract_vals(sparse, 4, "es", "ES_sparse_to_herb")
+
+	ES_wetland_to_sparse = extract_vals(wetland, 5, "es", "ES_wetland_to_sparse")
+
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_es = pd.concat(
+		[
+			ES_EF_to_shrub,
+			# ET_EF_to_herb,
+			# ES_EF_to_sparse,
+			# ET_DF_to_shrub,
+			ES_DF_to_herb,
+			ES_DF_to_sparse,
+			ES_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			ES_herb_to_shrub,
+			ES_herb_to_sparse,
+			# ET_herb_to_wetland,
+			ES_sparse_to_shrub,
+			ES_sparse_to_herb,
+			ES_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_es.columns = columns
+	idx = df_es.count()>50
+	df_es = df_es[idx.index[idx]]
+	print(f"saving ES_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_es,
+		title="ES",
+		ylabel="ES [mm $year^{-1}$]",
+		margin=5,
+		outname="ES_Boxplot.png",
+	)
+
+
+	EW_EF_to_shrub = extract_vals(EF, 3, "ew", "EW_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# EW_EF_to_sparse = extract_vals(EF, 5, "ew", "EW_EF_to_sparse")
+
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	EW_DF_to_herb = extract_vals(DF, 4, "ew", "EW_DF_to_herb")
+	EW_DF_to_sparse = extract_vals(DF, 5, "ew", "EW_DF_to_sparse")
+
+	EW_shrub_to_sparse = extract_vals(shrub, 5, "ew", "EW_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+
+	EW_herb_to_shrub = extract_vals(herb, 3, "ew", "EW_herb_to_shrub")
+	EW_herb_to_sparse = extract_vals(herb, 5, "ew", "EW_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+
+	EW_sparse_to_shrub = extract_vals(sparse, 3, "ew", "EW_sparse_to_shrub")
+	EW_sparse_to_herb = extract_vals(sparse, 4, "ew", "EW_sparse_to_herb")
+
+	EW_wetland_to_sparse = extract_vals(wetland, 5, "ew", "EW_wetland_to_sparse")
+
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_ew = pd.concat(
+		[
+			EW_EF_to_shrub,
+			# ET_EF_to_herb,
+			# EW_EF_to_sparse,
+			# ET_DF_to_shrub,
+			EW_DF_to_herb,
+			EW_DF_to_sparse,
+			EW_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			EW_herb_to_shrub,
+			EW_herb_to_sparse,
+			# ET_herb_to_wetland,
+			EW_sparse_to_shrub,
+			EW_sparse_to_herb,
+			EW_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_ew.columns = columns
+	idx = df_ew.count()>50
+	df_ew = df_ew[idx.index[idx]]
+	print(f"saving EW_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_ew,
+		title="EW",
+		ylabel="EW [mm $year^{-1}$]",
+		margin=5,
+		outname="EW_Boxplot.png",
+	)
+
+	ECI_EF_to_shrub = extract_vals(EF, 3, "eci", "ECI_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# ECI_EF_to_sparse = extract_vals(EF, 5, "eci", "ECI_EF_to_sparse")
+
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	ECI_DF_to_herb = extract_vals(DF, 4, "eci", "ECI_DF_to_herb")
+	ECI_DF_to_sparse = extract_vals(DF, 5, "eci", "ECI_DF_to_sparse")
+
+	ECI_shrub_to_sparse = extract_vals(shrub, 5, "eci", "ECI_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+
+	ECI_herb_to_shrub = extract_vals(herb, 3, "eci", "ECI_herb_to_shrub")
+	ECI_herb_to_sparse = extract_vals(herb, 5, "eci", "ECI_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+
+	ECI_sparse_to_shrub = extract_vals(sparse, 3, "eci", "ECI_sparse_to_shrub")
+	ECI_sparse_to_herb = extract_vals(sparse, 4, "eci", "ECI_sparse_to_herb")
+
+	ECI_wetland_to_sparse = extract_vals(wetland, 5, "eci", "ECI_wetland_to_sparse")
+
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_eci = pd.concat(
+		[
+			ECI_EF_to_shrub,
+			# ET_EF_to_herb,
+			# ECI_EF_to_sparse,
+			# ET_DF_to_shrub,
+			ECI_DF_to_herb,
+			ECI_DF_to_sparse,
+			ECI_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			ECI_herb_to_shrub,
+			ECI_herb_to_sparse,
+			# ET_herb_to_wetland,
+			ECI_sparse_to_shrub,
+			ECI_sparse_to_herb,
+			ECI_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_eci.columns = columns
+	idx = df_eci.count()>50
+	df_eci = df_eci[idx.index[idx]]
+
+	print(f"saving ECI_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_eci,
+		title="ECI",
+		ylabel="ECI [mm $year^{-1}$]",
+		margin=5,
+		outname="ECI_Boxplot.png",
+	)
+
+	ESW_EF_to_shrub = extract_vals(EF, 3, "esw", "ESW_EF_to_shrub")
+	# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
+	# ESW_EF_to_sparse = extract_vals(EF, 5, "esw", "ESW_EF_to_sparse")
+
+	# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
+	ESW_DF_to_herb = extract_vals(DF, 4, "esw", "ESW_DF_to_herb")
+	ESW_DF_to_sparse = extract_vals(DF, 5, "esw", "ESW_DF_to_sparse")
+
+	ESW_shrub_to_sparse = extract_vals(shrub, 5, "esw", "ESW_shrub_to_sparse")
+	# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
+
+	ESW_herb_to_shrub = extract_vals(herb, 3, "esw", "ESW_herb_to_shrub")
+	ESW_herb_to_sparse = extract_vals(herb, 5, "esw", "ESW_herb_to_sparse")
+	# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
+
+	ESW_sparse_to_shrub = extract_vals(sparse, 3, "esw", "ESW_sparse_to_shrub")
+	ESW_sparse_to_herb = extract_vals(sparse, 4, "esw", "ESW_sparse_to_herb")
+
+	ESW_wetland_to_sparse = extract_vals(wetland, 5, "esw", "ESW_wetland_to_sparse")
+
+	# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
+	# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
+
+	df_esw = pd.concat(
+		[
+			ESW_EF_to_shrub,
+			# ET_EF_to_herb,
+			# ESW_EF_to_sparse,
+			# ET_DF_to_shrub,
+			ESW_DF_to_herb,
+			ESW_DF_to_sparse,
+			ESW_shrub_to_sparse,
+			# ET_shrub_to_wetland,
+			ESW_herb_to_shrub,
+			ESW_herb_to_sparse,
+			# ET_herb_to_wetland,
+			ESW_sparse_to_shrub,
+			ESW_sparse_to_herb,
+			ESW_wetland_to_sparse,
+			# ET_water_to_sparse,
+			# ET_water_to_wetland,
+		],
+		ignore_index=True,
+		axis=1,
+	)
+	df_esw.columns = columns
+	idx = df_esw.count()>50
+	df_esw = df_esw[idx.index[idx]]
+
+	print(f"saving ESW_Boxplot.png in {fig_dir}")
+	myboxplot(
+		df=df_esw,
+		title="ESW",
+		ylabel="ESW [mm $year^{-1}$]",
+		margin=5,
+		outname="ESW_Boxplot.png",
+	)
+
+	df1 = {
+		"name": "CI",
+		"df": df_eci,
+		"label": "$\Delta$CI [mm/year]]",
+		"ylim": [-50, 50],
+	}
+	df2 = {
+		"name": "SW",
+		"df": df_esw,
+		"label": "$\Delta$SW [mm/year]]",
+		"ylim": [-50, 50],
+	}
+
+	df3 = {"name": "ET", "df": df_et, "label": "$\Delta$ET [mm/year]]", "ylim": [-50, 50]}
+
+	a = np.intersect1d(df1['df'].columns,df2['df'].columns)
+	b = np.intersect1d(a,df3['df'].columns)
+	df1['df'] = df1['df'][list(b)]
+	df2['df'] = df2['df'][list(b)]
+	df3['df'] = df3['df'][list(b)]
+
+	myboxplot_group(
+		df1, df2, df3, columns=columns, txt_pos=35, outname="ET_Components_integrated.png"
+	)
+
+	df_eci_mean = df_eci.mean()
+	df_esw_mean = df_esw.mean()
+	df_et_mean = df_et.mean()
+	df_eci_std = df_eci.std()
+	df_esw_std = df_esw.std()
+	df_et_std = df_et.std()
+
+	frames = pd.concat([df_eci_mean,df_esw_mean,df_et_mean,df_eci_std,df_esw_std,df_et_std],axis=1)
+	frames.columns = ["ECI Mean","ESW Mean","ET Mean","ECI STD","ESW STD","ET STD"]
+
+	with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
+		print("\n Mean and STD of ET components for different LUC conversions:",
+			file=text_file,
+		)
+		print(frames, file=text_file)
+	text_file.close()
+	print("\n Mean and STD of ET components for different LUC conversions:")
+	print(frames)
+
+
+'''---------------------------------------------------------
+							Prepare data
+---------------------------------------------------------'''
+print('----------------- Preparing data -----------------\n')
+input_dir = '/data/ABOVE/Final_data/'
+output_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/' 
+# Calling the results of the Max_Changed_Analyses.py
+# These are class changes; for example EF include all pixels where EF class changed to some other classes
+EF = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/EF_to_other.nc"
+)
+shrub = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/shrub_to_other.nc"
+)
+herb = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/herb_to_other.nc"
+)
+sparse = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/sparse_to_other.nc"
+)
+wetland = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/wetland_to_other.nc"
+)
+water = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/water_to_other.nc"
+)
+DF = xr.open_dataarray(
+	output_dir + "LUC_Change_Extracted/LUC_max_conversions/DF_to_other.nc"
 )
 
-df1 = {
-	"name": "LST",
-	"df": df_lst,
-	"label": "$\Delta$LST [C]",
-	"ylim": [-12, 12]
-	}
-df2 = {
-	"name": "Albedo",
-	"df": df_albedo,
-	"label": "$\Delta$Albedo",
-	"ylim": [-0.5, 0.5],
-	}
-df3 = {
-	"name": "ET",
-	"df": df_et, 
-	"label": "$\Delta$ET [mm/year]", 
-	"ylim": [-850, 850]
-	}
-print(f"saving Boxplot_groups.png in {fig_dir}")
-myboxplot_group(df1, df2, df3, columns=columns, txt_pos=9, outname="Boxplot_groups.png")
+# This is the map of water_energy limited areas with two classes
+WL_EL = xr.open_dataarray(
+	input_dir + "Water_Energy_Limited/Tif/WL_EL_Reclassified_reproject.nc"
+)
+WL_EL = WL_EL.squeeze() 
+conversions = xr.open_dataarray(
+			output_dir + "LUC_Change_Extracted/LUC_max_conversions/conversions_Table.nc"
+		)
+conversions_sum = conversions.sum("year")
+conversions_sum = pd.DataFrame(data = conversions_sum.values,index = LUC_Type,columns=LUC_Type)
+print("Number of pixles undergone extreme conversion. Rows/columns are \
+classes before/after conversion (Table XXXX in the paper):")
+print(conversions_sum)
 
-df_lst_mean = df_lst.mean()
-df_albedo_mean = df_albedo.mean()
-df_et_mean = df_et.mean()
-df_lst_std = df_lst.std()
-df_albedo_std = df_albedo.std()
-df_et_std = df_et.std()
 
-frames = pd.concat([df_lst_mean,df_albedo_mean,df_et_mean,df_lst_std,df_albedo_std,df_et_std],axis=1)
-frames.columns = ["LST Mean","Albedo Mean","ET Mean","LST STD","Albedo STD","ET STD"]
+if analyses_mode == "Monthly":
+	Months = ["Jan", "Feb", "Mar", "Apr","May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	print("\n----- Analyses mode is set to Growing, meaning we are working on the monthly data\n")
+	for i in np.arange(0,12):
+		print(f"\n-----------  Plotting {Months[i]}---------------\n" )
+		in_dir = input_dir+"Monthly" 	
+		out_dir = output_dir+"Main_Max_Change/Monthly/"+Months[i]+'/'
+		fig_dir = output_dir + "Main_Max_Change/Monthly/"+Months[i]+'/'+"Figures/"
+		
+		print("Working on LST...")	
+		lst_lulc = xr.open_dataarray(
+		output_dir
+		+ "Natural_Variability/Natural_Variability_Monthly_outputs/"+Months[i]+"/"+"delta_lst_changed_lulc_component.nc"
+		)
+		lst_nv = xr.open_dataarray(
+		output_dir
+		+ "Natural_Variability/Natural_Variability_Monthly_outputs/"+Months[i]+"/"+"delta_lst_changed_nv_component.nc"
+		)
+		
+		lst_diff_total = xr.open_dataarray(
+			output_dir
+			+ "Natural_Variability/Natural_Variability_Monthly_outputs/"+Months[i]+"/"+"delta_lst_total.nc"
+		)
+		# lst_diff_total = lst_diff_total.rename({"year": "time"})
+		lst = (
+			xr.open_dataarray(input_dir +"LST_Final/LST/Monthly_Mean/LST_Mean_"+Months[i]+".nc") - 273.15
+		)  # kelvin to C
+		lst = lst.sel(year=slice("2003", "2014"))
+		lst = lst.rename({"lat": "y", "lon": "x"})
+		
+		print("Working on albedo...")
+		albedo = xr.open_dataarray(input_dir + "ALBEDO_Final/Monthly_Albedo/Albedo_"+Months[i]+".nc")
+		albedo = albedo.sel(year=slice("2003", "2014"))
+		albedo_diff = albedo.diff("year")
+		
+		# albedo_diff = albedo_diff.rename({"time": "year"})
 
-with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
-    print("\n Mean and STD of the LST, albedo and ET aftr LUC conversion:",
-        file=text_file,
-    )
-    print(frames, file=text_file)
-text_file.close()
-print("Mean and STD of the LST, albedo and ET after LUC conversion:")
-print(frames)
+		print("Working on ET and its components...\n")
+		EC = xr.open_dataarray(input_dir + "ET_Final/Monthly_ET/"+"EC_Mean_"+Months[i]+".nc") # Vegetation transpiration
+		EI = xr.open_dataarray(input_dir + "ET_Final/Monthly_ET/"+"EI_Mean_"+Months[i]+".nc") # Vegetation transpiration
+		ES = xr.open_dataarray(input_dir + "ET_Final/Monthly_ET/"+"ES_Mean_"+Months[i]+".nc") # Vegetation transpiration
+		EW = xr.open_dataarray(input_dir + "ET_Final/Monthly_ET/"+"EW_Mean_"+Months[i]+".nc") # Vegetation transpiration
+		ET = xr.open_dataarray(input_dir + "ET_Final/Monthly_ET/"+"ET_Mean_"+Months[i]+".nc") # Vegetation transpiration
+		EC = EC.fillna(0)
+		EI = EI.fillna(0)
+		ES = ES.fillna(0)
+		EW = EW.fillna(0)
+		ECI = EC + EI  # canopy evapotranspiration
+		ESW = ES + EW  # soil/water/ice/snow evaporation
+		EC = EC.where(EC != 0)  # Convert zeros to nan
+		EI = EI.where(EI != 0)
+		ES = ES.where(ES != 0)
+		EW = EW.where(EW != 0)
+		ET = ET.where(ET != 0)
+		ECI = ECI.where(ECI != 0)
+		ESW = ESW.where(ESW != 0)
+		#Take the difference in ET 
+		EC_diff = EC.diff("year")
+		EI_diff = EI.diff("year")
+		ES_diff = ES.diff("year")
+		EW_diff = EW.diff("year")
+		ET_diff = ET.diff("year")
+		ECI_diff = ECI.diff("year")
+		ESW_diff = ESW.diff("year")
+		try:
+			Main_Analyses(EF,shrub,herb,sparse,wetland,water,WL_EL,lst_lulc,lst_diff_total,albedo_diff,EC_diff,EI_diff,ES_diff,EW_diff,ET_diff,ECI_diff,ESW_diff,conversions)
+		except (ValueError,IndexError):
+			with open(out_dir+"Results.txt", "w") as text_file:
+			print(f"Probably one of the datasets (e.g. Albedo) is nan for this {Months[i]}",
+			file=text_file,
+			)
+			print(conversions_sum, file=text_file)
+		text_file.close()
+			continue
 
-"""---------------------------------------------------------------------------
-					Analyzing energy vs. water limited 
-------------------------------------------------------------------------------"""
-print('----------------- Working on the energy vs water limited -----------------\n')
-# class_name = ["High_WL", "Moderate_WL", "Low_WL", "Low_EL", "High_EL"]
-class_name = ["Water_Limited", "Energy_limited"]
+		with open(out_dir+"Results.txt", "w") as text_file:
+			print("Number of pixles undergone extreme conversion. Rows/columns are \
+		classes before/after conversion (Table XXXX in the paper):",
+		file=text_file,
+		)
+			print(conversions_sum, file=text_file)
+		text_file.close()
+
+		# EW.isel(year=1).to_netcdf(out_dir+"test2_ew.nc")
+		# This is a netcdf file that shows all the extreme conversions calculated using the "Max_Change_Analyses.py"
+elif analyses_mode=="Growing":
+	print("Analyses mode is set to Growing, meaning we are working on the growing season (Apr-Nov; seven months)\n")
+	in_dir = input_dir 	
+	out_dir = output_dir+"Main_Max_Change/Growing/"+'/'
+	fig_dir = output_dir + "Main_Max_Change/Growing/"+'/'+"Figures/"
+	
+
+	print("Working on LST")	
+	lst_lulc = xr.open_dataarray(
+	output_dir
+	+ "Natural_Variability/Natural_Variability_Growing_outputs/"+"delta_lst_changed_lulc_component.nc"
+	)
+	lst_nv = xr.open_dataarray(
+	output_dir
+	+ "Natural_Variability/Natural_Variability_Growing_outputs/"+"delta_lst_changed_nv_component.nc"
+	)
+	
+	lst_diff_total = xr.open_dataarray(
+		output_dir
+		+ "Natural_Variability/Natural_Variability_Growing_outputs/"+"delta_lst_total.nc"
+	)
+	# lst_diff_total = lst_diff_total.rename({"year": "time"})
+	lst = (
+		xr.open_dataarray(input_dir +"LST_Final/LST/Growing_Mean/lst_mean_growing.nc") - 273.15
+	)  # kelvin to C
+	lst = lst.sel(year=slice("2003", "2014"))
+	lst = lst.rename({"lat": "y", "lon": "x"})
+	
+	print("Working on albedo...")
+	albedo = xr.open_dataarray(input_dir + "ALBEDO_Final/Growing_Albedo/Albedo_growing.nc")
+	albedo = albedo.sel(year=slice("2003", "2014"))
+	albedo_diff = albedo.diff("year")
+	
+	# albedo_diff = albedo_diff.rename({"time": "year"})
+
+	print("Working on ET and its components...\n")
+	EC = xr.open_dataarray(input_dir + "ET_Final/Growing_ET/EC_Growing.nc") # Vegetation transpiration
+	EI = xr.open_dataarray(input_dir + "ET_Final/Growing_ET/EI_Growing.nc") # Vegetation transpiration
+	ES = xr.open_dataarray(input_dir + "ET_Final/Growing_ET/ES_Growing.nc") # Vegetation transpiration
+	EW = xr.open_dataarray(input_dir + "ET_Final/Growing_ET/EW_Growing.nc") # Vegetation transpiration
+	ET = xr.open_dataarray(input_dir + "ET_Final/Growing_ET/ET_Growing.nc") # Vegetation transpiration
+	EC = EC.fillna(0)
+	EI = EI.fillna(0)
+	ES = ES.fillna(0)
+	EW = EW.fillna(0)
+	ECI = EC + EI  # canopy evapotranspiration
+	ESW = ES + EW  # soil/water/ice/snow evaporation
+	EC = EC.where(EC != 0)  # Convert zeros to nan
+	EI = EI.where(EI != 0)
+	ES = ES.where(ES != 0)
+	EW = EW.where(EW != 0)
+	ET = ET.where(ET != 0)
+	ECI = ECI.where(ECI != 0)
+	ESW = ESW.where(ESW != 0)
+	#Take the difference in ET 
+	EC_diff = EC.diff("year")
+	EI_diff = EI.diff("year")
+	ES_diff = ES.diff("year")
+	EW_diff = EW.diff("year")
+	ET_diff = ET.diff("year")
+	ECI_diff = ECI.diff("year")
+	ESW_diff = ESW.diff("year")
+	Main_Analyses(EF,shrub,herb,sparse,wetland,water,WL_EL,lst_lulc,lst_diff_total,albedo_diff,EC_diff,EI_diff,ES_diff,EW_diff,ET_diff,ECI_diff,ESW_diff,conversions)
+elif analyses_mode=="Annual":
+	print("Analyses mode is set to Annual, meaning we are working on the annual data (Jan-Dec)\n")
+
+
+print("#################    ALL Done!    ###########################")
+
+		
+		
+
+
+	
 '''
-print("Extracting EF to Sparse energy vs. water limited LST, albedo and ET\n")
-# EF to sparse conversion which we have enough data for EL_EL analyses
-lst_EL_WL, albedo_EL_WL, et_EL_WL = extract_wl_el(
-	orig_class=EF, val=5
-)  # There are enough data
-df1 = {"name": "LST", "df": lst_EL_WL, "label": "$\Delta$LST [C]", "ylim": [-12, 12]}
-df2 = {
-	"name": "Albedo",
-	"df": albedo_EL_WL,
-	"label": "$\Delta$Albedo",
-	"ylim": [-0.5, 0.5],
-}
-df3 = {
-	"name": "ET",
-	"df": et_EL_WL,
-	"label": "$\Delta$ET [mm/year]",
-	"ylim": [-850, 850],
-}
-print(f"saving EF_sparse_EL_WL.png in {fig_dir}")
-myboxplot_group(
-	df1, df2, df3, columns=class_name, txt_pos=9, outname="EF_sparse_EL_WL.png"
-)
-lst_mean=lst_EL_WL.mean()
-albedo_mean=albedo_EL_WL.mean()
-et_mean=et_EL_WL.mean()
-lst_std=lst_EL_WL.std()
-albedo_std=albedo_EL_WL.std()
-et_std=et_EL_WL.std()
-
-ef_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
-ef_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
-
-with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
-    print("\n Mean and STD of water vs. energy limited LST, albedo and ET for EF to sparse conversion:",
-        file=text_file,
-    )
-    print(ef_sparse_el_wl_df, file=text_file)
-text_file.close()
-'''
-# extract_wl_el(orig_class=EF, val=3, outname="EF_shrub_EL_WL.png")  # Not enough data
-# extract_wl_el(orig_class=DF, val=5, outname="DF_sparse_EL_WL.png")  # Not enough data
-# extract_wl_el(orig_class=DF, val=4, outname="DF_herb_EL_WL.png")  # Not enough data
-# extract_wl_el(
-# 	orig_class=shrub, val=5, outname="Shrub_sparse_EL_WL.png"
-# )  # Not enough data
-
-print("Extracting Herbaceous to Sparse energy vs. water limited LST, albedo and ET\n")
-# Herb to sparse conversion which we have enought data to analyze
-lst_EL_WL, albedo_EL_WL, et_EL_WL = extract_wl_el(
-	orig_class=herb, val=5
-)  # There are enough data
-
-df1 = {"name": "LST", "df": lst_EL_WL, "label": "$\Delta$LST [C]", "ylim": [-12, 12]}
-df2 = {
-	"name": "Albedo",
-	"df": albedo_EL_WL,
-	"label": "$\Delta$Albedo",
-	"ylim": [-0.5, 0.5],
-}
-df3 = {
-	"name": "ET",
-	"df": et_EL_WL,
-	"label": "$\Delta$ET [mm/year]",
-	"ylim": [-850, 850],
-}
-print(f"saving Herb_sparse_EL_WL.png in {fig_dir}")
-myboxplot_group(
-	df1, df2, df3, columns=class_name, txt_pos=9, outname="Herb_sparse_EL_WL.png"
-)
-
-lst_mean=lst_EL_WL.mean()
-albedo_mean=albedo_EL_WL.mean()
-et_mean=et_EL_WL.mean()
-lst_std=lst_EL_WL.std()
-albedo_std=albedo_EL_WL.std()
-et_std=et_EL_WL.std()
-
-herb_sparse_el_wl_df = pd.concat([lst_mean,albedo_mean,et_mean,lst_std,albedo_std,et_std],axis=1)
-herb_sparse_el_wl_df.columns = ['LST Mean','Albedo Mean','ET Mean','LST STD','Albedo STD','ET STD']
-
-with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
-    print("\n Mean and STD of water vs. energy limited LST, albedo and ET for herb to sparse conversion:",
-        file=text_file,
-    )
-    print(herb_sparse_el_wl_df, file=text_file)
-text_file.close()
-
-# extract_wl_el(
-# 	orig_class=sparse, val=3, outname="Sparse_shrub_EL_WL.png"
-# )  # Not enough data
-# extract_wl_el(
-# 	orig_class=sparse, val=4, outname="Sparse_herb_EL_WL.png"
-# )  # Not enough data
-# extract_wl_el(
-# 	orig_class=wetland, val=5, outname="Wetland_sparse_EL_WL.png"
-# )  # Not enough data
-
-"""---------------------------------------------------------------------------
-
-					Now we focus on different components of the ET 
-
-------------------------------------------------------------------------------"""
-print('----------------- Plotting ET component -----------------\n')
-EC_EF_to_shrub = extract_vals(EF, 3, "ec", "EC_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# EC_EF_to_sparse = extract_vals(EF, 5, "ec", "EC_EF_to_sparse")
-
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-EC_DF_to_herb = extract_vals(DF, 4, "ec", "EC_DF_to_herb")
-EC_DF_to_sparse = extract_vals(DF, 5, "ec", "EC_DF_to_sparse")
-
-EC_shrub_to_sparse = extract_vals(shrub, 5, "ec", "EC_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
-
-EC_herb_to_shrub = extract_vals(herb, 3, "ec", "EC_herb_to_shrub")
-EC_herb_to_sparse = extract_vals(herb, 5, "ec", "EC_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
-
-EC_sparse_to_shrub = extract_vals(sparse, 3, "ec", "EC_sparse_to_shrub")
-EC_sparse_to_herb = extract_vals(sparse, 4, "ec", "EC_sparse_to_herb")
-
-EC_wetland_to_sparse = extract_vals(wetland, 5, "ec", "EC_wetland_to_sparse")
-
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
-
-df_ec = pd.concat(
-	[
-		EC_EF_to_shrub,
-		# ET_EF_to_herb,
-		# EC_EF_to_sparse,
-		# ET_DF_to_shrub,
-		EC_DF_to_herb,
-		EC_DF_to_sparse,
-		EC_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		EC_herb_to_shrub,
-		EC_herb_to_sparse,
-		# ET_herb_to_wetland,
-		EC_sparse_to_shrub,
-		EC_sparse_to_herb,
-		EC_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-
-df_ec.columns = columns
-print(f"saving EC_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_ec,
-	title="EC",
-	ylabel="EC [mm $year^{-1}$]",
-	margin=5,
-	outname="EC_Boxplot.png",
-)
-
-
-ES_EF_to_shrub = extract_vals(EF, 3, "es", "ES_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# ES_EF_to_sparse = extract_vals(EF, 5, "es", "ES_EF_to_sparse")
-
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-ES_DF_to_herb = extract_vals(DF, 4, "es", "ES_DF_to_herb")
-ES_DF_to_sparse = extract_vals(DF, 5, "es", "ES_DF_to_sparse")
-
-ES_shrub_to_sparse = extract_vals(shrub, 5, "es", "ES_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
-
-ES_herb_to_shrub = extract_vals(herb, 3, "es", "ES_herb_to_shrub")
-ES_herb_to_sparse = extract_vals(herb, 5, "es", "ES_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
-
-ES_sparse_to_shrub = extract_vals(sparse, 3, "es", "ES_sparse_to_shrub")
-ES_sparse_to_herb = extract_vals(sparse, 4, "es", "ES_sparse_to_herb")
-
-ES_wetland_to_sparse = extract_vals(wetland, 5, "es", "ES_wetland_to_sparse")
-
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
-
-df_es = pd.concat(
-	[
-		ES_EF_to_shrub,
-		# ET_EF_to_herb,
-		# ES_EF_to_sparse,
-		# ET_DF_to_shrub,
-		ES_DF_to_herb,
-		ES_DF_to_sparse,
-		ES_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		ES_herb_to_shrub,
-		ES_herb_to_sparse,
-		# ET_herb_to_wetland,
-		ES_sparse_to_shrub,
-		ES_sparse_to_herb,
-		ES_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-
-df_es.columns = columns
-print(f"saving ES_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_es,
-	title="ES",
-	ylabel="ES [mm $year^{-1}$]",
-	margin=5,
-	outname="ES_Boxplot.png",
-)
-
-
-EW_EF_to_shrub = extract_vals(EF, 3, "ew", "EW_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# EW_EF_to_sparse = extract_vals(EF, 5, "ew", "EW_EF_to_sparse")
-
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-EW_DF_to_herb = extract_vals(DF, 4, "ew", "EW_DF_to_herb")
-EW_DF_to_sparse = extract_vals(DF, 5, "ew", "EW_DF_to_sparse")
-
-EW_shrub_to_sparse = extract_vals(shrub, 5, "ew", "EW_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
-
-EW_herb_to_shrub = extract_vals(herb, 3, "ew", "EW_herb_to_shrub")
-EW_herb_to_sparse = extract_vals(herb, 5, "ew", "EW_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
-
-EW_sparse_to_shrub = extract_vals(sparse, 3, "ew", "EW_sparse_to_shrub")
-EW_sparse_to_herb = extract_vals(sparse, 4, "ew", "EW_sparse_to_herb")
-
-EW_wetland_to_sparse = extract_vals(wetland, 5, "ew", "EW_wetland_to_sparse")
-
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
-
-df_ew = pd.concat(
-	[
-		EW_EF_to_shrub,
-		# ET_EF_to_herb,
-		# EW_EF_to_sparse,
-		# ET_DF_to_shrub,
-		EW_DF_to_herb,
-		EW_DF_to_sparse,
-		EW_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		EW_herb_to_shrub,
-		EW_herb_to_sparse,
-		# ET_herb_to_wetland,
-		EW_sparse_to_shrub,
-		EW_sparse_to_herb,
-		EW_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-
-df_ew.columns = columns
-print(f"saving EW_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_ew,
-	title="EW",
-	ylabel="EW [mm $year^{-1}$]",
-	margin=5,
-	outname="EW_Boxplot.png",
-)
-
-ECI_EF_to_shrub = extract_vals(EF, 3, "eci", "ECI_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# ECI_EF_to_sparse = extract_vals(EF, 5, "eci", "ECI_EF_to_sparse")
-
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-ECI_DF_to_herb = extract_vals(DF, 4, "eci", "ECI_DF_to_herb")
-ECI_DF_to_sparse = extract_vals(DF, 5, "eci", "ECI_DF_to_sparse")
-
-ECI_shrub_to_sparse = extract_vals(shrub, 5, "eci", "ECI_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
-
-ECI_herb_to_shrub = extract_vals(herb, 3, "eci", "ECI_herb_to_shrub")
-ECI_herb_to_sparse = extract_vals(herb, 5, "eci", "ECI_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
-
-ECI_sparse_to_shrub = extract_vals(sparse, 3, "eci", "ECI_sparse_to_shrub")
-ECI_sparse_to_herb = extract_vals(sparse, 4, "eci", "ECI_sparse_to_herb")
-
-ECI_wetland_to_sparse = extract_vals(wetland, 5, "eci", "ECI_wetland_to_sparse")
-
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
-
-df_eci = pd.concat(
-	[
-		ECI_EF_to_shrub,
-		# ET_EF_to_herb,
-		# ECI_EF_to_sparse,
-		# ET_DF_to_shrub,
-		ECI_DF_to_herb,
-		ECI_DF_to_sparse,
-		ECI_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		ECI_herb_to_shrub,
-		ECI_herb_to_sparse,
-		# ET_herb_to_wetland,
-		ECI_sparse_to_shrub,
-		ECI_sparse_to_herb,
-		ECI_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-
-df_eci.columns = columns
-print(f"saving ECI_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_eci,
-	title="ECI",
-	ylabel="ECI [mm $year^{-1}$]",
-	margin=5,
-	outname="ECI_Boxplot.png",
-)
-
-ESW_EF_to_shrub = extract_vals(EF, 3, "esw", "ESW_EF_to_shrub")
-# ET_EF_to_herb = extract_vals(EF, 4, "et", "ET_EF_to_herb")
-# ESW_EF_to_sparse = extract_vals(EF, 5, "esw", "ESW_EF_to_sparse")
-
-# ET_DF_to_shrub = extract_vals(DF, 3, "et", "ET_DF_to_shrub")
-ESW_DF_to_herb = extract_vals(DF, 4, "esw", "ESW_DF_to_herb")
-ESW_DF_to_sparse = extract_vals(DF, 5, "esw", "ESW_DF_to_sparse")
-
-ESW_shrub_to_sparse = extract_vals(shrub, 5, "esw", "ESW_shrub_to_sparse")
-# ET_shrub_to_wetland = extract_vals(shrub, 6, "et", "ET_shrub_to_wetland")
-
-ESW_herb_to_shrub = extract_vals(herb, 3, "esw", "ESW_herb_to_shrub")
-ESW_herb_to_sparse = extract_vals(herb, 5, "esw", "ESW_herb_to_sparse")
-# ET_herb_to_wetland = extract_vals(herb, 6, "et", "ET_herb_to_wetland")
-
-ESW_sparse_to_shrub = extract_vals(sparse, 3, "esw", "ESW_sparse_to_shrub")
-ESW_sparse_to_herb = extract_vals(sparse, 4, "esw", "ESW_sparse_to_herb")
-
-ESW_wetland_to_sparse = extract_vals(wetland, 5, "esw", "ESW_wetland_to_sparse")
-
-# ET_water_to_sparse = extract_vals(water, 5, "et", "ET_water_to_sparse")
-# ET_water_to_wetland = extract_vals(water, 6, "et", "ET_water_to_wetland")
-
-df_esw = pd.concat(
-	[
-		ESW_EF_to_shrub,
-		# ET_EF_to_herb,
-		# ESW_EF_to_sparse,
-		# ET_DF_to_shrub,
-		ESW_DF_to_herb,
-		ESW_DF_to_sparse,
-		ESW_shrub_to_sparse,
-		# ET_shrub_to_wetland,
-		ESW_herb_to_shrub,
-		ESW_herb_to_sparse,
-		# ET_herb_to_wetland,
-		ESW_sparse_to_shrub,
-		ESW_sparse_to_herb,
-		ESW_wetland_to_sparse,
-		# ET_water_to_sparse,
-		# ET_water_to_wetland,
-	],
-	ignore_index=True,
-	axis=1,
-)
-
-df_esw.columns = columns
-print(f"saving ESW_Boxplot.png in {fig_dir}")
-myboxplot(
-	df=df_esw,
-	title="ESW",
-	ylabel="ESW [mm $year^{-1}$]",
-	margin=5,
-	outname="ESW_Boxplot.png",
-)
-
-df1 = {
-	"name": "CI",
-	"df": df_eci,
-	"label": "$\Delta$CI [mm/year]]",
-	"ylim": [-300, 300],
-}
-df2 = {
-	"name": "SW",
-	"df": df_esw,
-	"label": "$\Delta$SW [mm/year]]",
-	"ylim": [-300, 300],
-}
-
-df3 = {"name": "ET", "df": df_et, "label": "$\Delta$ET [mm/year]]", "ylim": [-850, 850]}
-myboxplot_group(
-	df1, df2, df3, columns=columns, txt_pos=200, outname="ET_Components_integrated.png"
-)
-
-df_eci_mean = df_eci.mean()
-df_esw_mean = df_esw.mean()
-df_et_mean = df_et.mean()
-df_eci_std = df_eci.std()
-df_esw_std = df_esw.std()
-df_et_std = df_et.std()
-
-frames = pd.concat([df_eci_mean,df_esw_mean,df_et_mean,df_eci_std,df_esw_std,df_et_std],axis=1)
-frames.columns = ["ECI Mean","ESW Mean","ET Mean","ECI STD","ESW STD","ET STD"]
-
-with open(out_dir +analyses_mode+"_report.txt", "a") as text_file:
-    print("\n Mean and STD of ET components for different LUC conversions:",
-        file=text_file,
-    )
-    print(frames, file=text_file)
-text_file.close()
-print("Mean and STD of ET components for different LUC conversions:")
-print(frames)
-
 """ ------------------------------------------------------------------
 Analyzing an two example pixles where one the LUC (e.g. DF) is changed
 and the other which is approximaltly close hasn't been changed. These pixles 
@@ -1217,3 +1338,4 @@ plot_example(EI_changed, EI_not_changed, "EI [mm/year]", outname="EI.png")
 print('----------------- All done! -----------------\n')
 
 # ------------------------------ End of the script --------------------------------------------
+'''

@@ -13,12 +13,15 @@ if __name__ == "__main__":
 	# 		Prameteres and paths
 	# -----------------------------------------------------------------
 	analyses_mode = "Monthly"
-	in_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_data/Final_data/"
-	out_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
-	LUC_dir = in_dir + "LUC/"
+	#in_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_data/Final_data/"
+	#out_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
+	input_dir = '/data/ABOVE/Final_data/'
+	output_dir = '/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/'
+	
 	nband = 7  # number of LUC classes in the analysis
 	win_size = 51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
 	years = range(2003, 2015)  # 2003-2015
+	
 	# ---------------------------------------------------------------------
 	#                      Functions used in the script
 	# ---------------------------------------------------------------------
@@ -99,7 +102,7 @@ if __name__ == "__main__":
 		for k in range(0, len(years) - 1):
 			year1 = years[k]
 			year2 = years[k + 1]
-			# print(year2)
+			print(year2)
 			# open LST and LUC tiles
 
 			luc_year1 = LUC.sel(year=year1)
@@ -408,7 +411,7 @@ if __name__ == "__main__":
 		# 				Calculate the delta LST and LUC Monthly
 		# ------------------------------------------------------------------
 		print("Calculating monthly natural variablity and LUC compontents of \u0394LST")
-		LUC = xr.open_dataarray(LUC_dir + "LULC_2003_2014.nc")
+		LUC = xr.open_dataarray(input_dir + "LUC/LULC_2003_2014.nc")
 		Months = [
 			"Jan",
 			"Feb",
@@ -425,24 +428,22 @@ if __name__ == "__main__":
 		]
 		# in_dir = in_dir+"Monthly_Mean/"
 		# Matrix of distance of each pixel from the central pixel used in inverse
-		dist_m = dist_matrix(win_size, win_size)
+		dist_m = dist_matrix(win_size, win_size)	
 
-		def monthly_cal(k,in_dir,out_dir,LUC_dir,Months,nband, years, win_size, dist_m):
+		def monthly_cal(k,input_dir,out_dir,LUC,Months,nband, years, win_size, dist_m):
 			# for k in list(range(0,12)):
 			print(f"Month ----> {Months[k]}")
-			LUC = xr.open_dataarray(LUC_dir + "LULC_2003_2014.nc")
 			out_dir = (
-				out_dir
+				output_dir
 				+ "/Natural_Variability/Natural_Variability_Monthly_outputs/"
 				+ Months[k]
 				+ "/"
 			)
-			LST = xr.open_dataarray(in_dir + "LST_Final/LST/Monthly_Mean/LST_Mean_" + Months[k] + ".nc")
+			LST = xr.open_dataarray(input_dir + "LST_Final/LST/Monthly_Mean/LST_Mean_" + Months[k] + ".nc")
 			LST = LST.rename({"lat": "y", "lon": "x"})
 			LST = LST - 273.15
 			LST = LST.rename({"time": "year"})
 			LST = LST.assign_coords({"year": LST.year.dt.year.values})
-			LUC = xr.open_dataarray(LUC_dir+"LULC_2003_2014.nc")
 			calculate_nv(LST, LUC, nband, years, win_size, dist_m, out_dir)
 
 		dask.config.set(scheduler="processes")
