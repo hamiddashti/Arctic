@@ -130,7 +130,7 @@ import time
 t1 = time.time()
 dask.config.set(scheduler='processes')
 	#IDs = np.arange(1, len(geodf)+1)
-IDs = np.arange(0,10000)
+IDs = np.arange(0,1000)
 lazy_results=[]
 for n in IDs:
 	lazy_result = dask.delayed(my_cal)(n)

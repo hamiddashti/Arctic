@@ -19,14 +19,14 @@ shape_file = in_dir+"shp_files/ABoVE_1km_Grid_4326.shp"
 # shape_file = "one_pix.shp"
 NUMBER_OF_CLASSES = 7
 PIX_IGNORE = 3 # Minimum number of LUC pixels changed in a modis pixel (3 pixels is slightly above our 1% threshold for considering a LUC change)
-years = pd.date_range(start="2003",end="2004",freq="A").year
+years = pd.date_range(start="2003",end="2015",freq="A").year
 class_names = ["EF","DF","shrub","herb","sparse","wetland","water"]
 
 conversion_type = []
-for i in range(0,7):
-	for j in range(0,7):
-		if (i==j):
-			continue
+for i in range(0,NUMBER_OF_CLASSES):
+	for j in range(0,NUMBER_OF_CLASSES):
+		# if (i==j):
+		# 	continue
 		# else:
 		tmp=class_names[i]+"_"+class_names[j]
 		conversion_type.append(tmp)
@@ -71,13 +71,13 @@ def skip_diag_strided(A):
 	strided = np.lib.stride_tricks.as_strided
 	s0,s1 = A.strides
 	return strided(A.ravel()[1:], shape=(m-1,m), strides=(s0+s1,s1)).reshape(m,-1)
-
+print('reading the shapefile')
 with fiona.open(shape_file, "r") as shapefile:
 	shapes = [feature["geometry"] for feature in shapefile]
 
 # inputs to the confusionmatrix function
 unique = np.arange(1,NUMBER_OF_CLASSES+1) 
-imap   = {key: i for i, key in enumerate(unique)}
+imap = {key: i for i, key in enumerate(unique)}
 
 ds_names=[]
 for year in years:
