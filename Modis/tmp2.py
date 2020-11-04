@@ -1,23 +1,19 @@
-import dask
 import xarray as xr 
-import matplotlib.pyplot as plt
-from sklearn import linear_model
-import numpy as np
+import glob 
 
+<<<<<<< HEAD
 def reject_outliers(data, m):
 	# m is number of std
 	import numpy as np
 	data = data.astype(float)
 	data[abs(data - np.nanmean(data)) > m * np.nanstd(data)] = np.nan
 	return data
+=======
+fnames = glob.glob('*Simplified*.tif')
+>>>>>>> 92071b591133a0a10b0c6bb831be4b9d164e5e89
 
-def lsg(predictors,target):
-	# least square solution
-	a = np.linalg.inv(np.matmul(predictors.T, predictors))
-	b = np.matmul(predictors.T,target)
-	coefficients = np.matmul(a,b)
-	return coefficients
 
+<<<<<<< HEAD
 ds = xr.open_dataset('/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Sensitivity/EndPoints/ds_2013_EndPoints.nc')
 labels = ds['Conversions'].values
 
@@ -143,3 +139,5 @@ var_slope_mc_std = np.std(var_slope_mc,axis=0)
 
 print("Mean is: ")
 print(var_slope_mc_mean)
+=======
+>>>>>>> 92071b591133a0a10b0c6bb831be4b9d164e5e89
