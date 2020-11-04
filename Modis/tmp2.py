@@ -9,7 +9,6 @@ def reject_outliers(data, m):
 	import numpy as np
 	data = data.astype(float)
 	data[abs(data - np.nanmean(data)) > m * np.nanstd(data)] = np.nan
-	
 	return data
 
 def lsg(predictors,target):
@@ -19,32 +18,26 @@ def lsg(predictors,target):
 	coefficients = np.matmul(a,b)
 	return coefficients
 
-ds = xr.open_dataset('/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Sensitivity/ds_2004.nc')
+ds = xr.open_dataset('/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Sensitivity/EndPoints/ds_2013_EndPoints.nc')
 labels = ds['Conversions'].values
 
-ignore_list = np.array([6,12,13,18,19,20,24,25,26,27,30,31,32,33,34,36,37,38,39,40,41])
-include_list = np.array([0,1,2,3,4,5,7,8,9,10,11,14,15,16,17,21,22,23,28,29,35])
+
+ignore_list = np.array([0,7,8,14,15,16,21,22,23,24,28,29,30,31,32,35,36,37,38,39,40,42,43,44,45,46,47,48])
+include_list = np.array([1,2,3,4,5,6,9,10,11,12,13,17,18,19,20,25,26,27,33,34,41])
 labels[include_list]
 
 X = ds['confused_normalized_Total'].squeeze().values
 Y = ds['delta_var_total'].values
 
-# Remove rows with all zeros
-I = np.where(X.any(axis=1))[0]
-X = X[I]
-Y=Y[I]
-
-for i in ignore_list:
-	# Remove all rows (i.e. pixels) where there is reverse transition
-	print(i)
-	Y= Y[(X[:,i]==0)]
-	X= X[(X[:,i]==0),:]
 
 # Remove all the columns associated with reverse transitions
 XX = X[:,include_list]
 
 # Find and remove outliers
 Y_clean = reject_outliers(Y,2)
+plt.hist(Y_clean)
+plt.show()
+
 yy = Y_clean[~np.isnan(Y_clean)]
 XX = XX[np.array(~np.isnan(Y_clean)).squeeze(),:]
 
