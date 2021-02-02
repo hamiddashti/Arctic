@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 ''' 
 Script to extract the confusion table of classes changed between two years 
 '''
+=======
+>>>>>>> d1046bc05f683d1468c4e34ef3293a4324c46c74
 import numpy as np
 # from sklearn.metrics import confusion_matrix
 import rasterio
