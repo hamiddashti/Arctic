@@ -1121,7 +1121,7 @@ df2 = {
 	"ylim": [-300, 300],
 }
 
-df3 = {"name": "ET", "df": df_et, "label": "$\Delta$ET [mm/year]]", "ylim": [-850, 850]}
+df3 = {"name": "ET", "df": df_et, "label": "$\Delta$ET [mm/year]]", "ylim": [-850, 850],}
 myboxplot_group(
 	df1, df2, df3, columns=columns, txt_pos=200, outname="ET_Components_integrated.png"
 )

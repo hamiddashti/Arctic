@@ -12,7 +12,7 @@ if __name__ == "__main__":
 	# -----------------------------------------------------------------
 	# 		Prameteres and paths
 	# -----------------------------------------------------------------
-	analyses_mode = "Monthly"
+	analyses_mode = "Annual"	# ----> Monthly/Growing/Annual
 	#in_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_data/Final_data/"
 	#out_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
 	input_dir = '/data/ABOVE/Final_data/'
@@ -20,8 +20,12 @@ if __name__ == "__main__":
 	
 	nband = 7  # number of LUC classes in the analysis
 	win_size = 51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
-	years = range(2003, 2015)  # 2003-2015
-	
+	EndPoint = True
+	if EndPoint:
+		years = (2003,2013)	
+	else:
+		years = range(2003, 2015)  # 2003-2015
+
 	# ---------------------------------------------------------------------
 	#                      Functions used in the script
 	# ---------------------------------------------------------------------
@@ -468,7 +472,7 @@ if __name__ == "__main__":
 		print(
 			"Calculating growing season (Apr-Nov) natural variablity and LUC compontents of \u0394LST"
 		)
-		LUC = xr.open_dataarray(LUC_dir + "LULC_2003_2014.nc")
+		LUC = xr.open_dataarray(input_dir + "LUC/LULC_2003_2014.nc")
 		in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Growing_Mean/"
 		out_dir = out_dir + "/Natural_Variability/Natural_Variability_Growing_outputs/"
 		# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
@@ -487,8 +491,9 @@ if __name__ == "__main__":
 		# ------------------------------------------------------------------
 
 		in_dir = "/data/ABOVE/Final_data/LST_Final/LST/Annual_Mean/"
-		out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Natural_Variability/Natural_Variability_Annual_outputs/"
+		out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Natural_Variability/Natural_Variability_Annual_outputs/EndPoints/"
 		# annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
+		LUC = xr.open_dataarray(input_dir + "LUC/LULC_2003_2014.nc")
 		LST = xr.open_dataarray(in_dir + "lst_mean_annual.nc")
 		LST = LST.rename({"lat": "y", "lon": "x"})
 		LST = LST - 273.15
@@ -499,4 +504,8 @@ if __name__ == "__main__":
 			"The annual results are saved in /data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/Natural_Variability/Natural_Variability_Annual_outputs/"
 		)
 
+	
+	
+	
+	print("All Done!")
 	###################     All Done !    #########################
