@@ -887,3 +887,17 @@ def class_to_what(x,CType,idx):
 	else:
 		print('No class provided')
 
+def get_raster_domain(in_ras,out_name):
+	# Get the bounding box of a tif and create a shapefile polygon.
+	# In_ ras = input raster (str)
+	# out_name = desired path and name of the output file (str)
+	import rasterio 
+	import geopandas as gpd
+	from shapely.geometry import box
+	ds= rasterio.open(in_ras)
+	bounds = ds.bounds
+	crs = ds.crs
+	gdf = gpd.GeoDataFrame(columns=['geometry'])
+	gdf = gdf.append({'geometry': box(bounds[0],bounds[1],bounds[2],bounds[3])},ignore_index=True)
+	gdf.crs = crs
+	gdf.to_file(out_name)
