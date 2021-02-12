@@ -1,4 +1,4 @@
-# **Preparing albedo data**
+#**Preparing albedo data**
 Here I explain the codes, steps and locations for processing albedo data
 
 	• Download data
