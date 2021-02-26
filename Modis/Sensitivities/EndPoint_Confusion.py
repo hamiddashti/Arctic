@@ -7,46 +7,50 @@ import pandas as pd
 import xarray as xr 
 from rasterio import features
 from rasterio.mask import mask
-
-analyses_mode  = "Annual"
+import time
+t1 = time.time()
+analyses_mode  = "Seasonal"
 in_dir = "/data/ABOVE/Final_data/"
 out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
 NUMBER_OF_CLASSES = 7
+
 unique = np.arange(1,NUMBER_OF_CLASSES+1) 
 imap = {key: i for i, key in enumerate(unique)}
 
 luc1 = rasterio.open(in_dir+'LUC/geo_Recalssified_2003_Final_Mosaic.tif')
 luc2 = rasterio.open(in_dir+'LUC/geo_Recalssified_2013_Final_Mosaic.tif')
 
-if analyses_mode =="Annual":
-	lst = xr.open_dataarray("/data/ABOVE/Final_data/LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
-	lst2003 = lst.sel(year=2003)
-	lst2013 = lst.sel(year=2013)
+seasons = ["DJF","MAM","JJA","SON"]
+if analyses_mode =="Seasonal":
+	lst = xr.open_dataarray("/data/ABOVE/Final_data/LST_Final/LST/Seasonal_Mean/LST_Mean_MAM.nc")
+	lst2003 = lst.loc['2003'].squeeze()
+	lst2013 = lst.loc['2013'].squeeze()
 	lst_lulc = xr.open_dataarray(
 		out_dir
-		+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/delta_lst_changed_lulc_component_2013.nc"
+		+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/"+seasons[1]+"/delta_lst_changed_lulc_component_2013.nc"
 	)
 
 	lst_nv = xr.open_dataarray(
 	out_dir
-	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/delta_lst_changed_nv_component_2013.nc"
+	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/"+seasons[1]+"/delta_lst_changed_nv_component_2013.nc"
 	)
 
 	lst_diff_total = xr.open_dataarray(
 	out_dir
-	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/delta_lst_total_2013.nc"
+	+ "Natural_Variability/Natural_Variability_"+analyses_mode+"_outputs/EndPoints/"+seasons[1]+"/delta_lst_total_2013.nc"
 	)
 
-	albedo = xr.open_dataarray(in_dir + "ALBEDO_Final/Albedo_annual.nc")
-	albedo2003 = albedo.sel(year=2003)
-	albedo2013 = albedo.sel(year=2013)
+	# albedo = xr.open_dataarray(in_dir + "ALBEDO_Final/Seasonal_Albedo/Albedo_Mean_"+seasons[1]+".nc")
+	albedo = xr.open_dataarray(in_dir + "ALBEDO_Final/Seasonal_Albedo/Albedo_Mean_MAM.nc")
+	albedo2003 = albedo.loc['2003'].squeeze()
+	albedo2013 = albedo.loc['2013'].squeeze()
 	albedo_diff = albedo2013 - albedo2003
 
-	EC = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/EC_Annual.nc") # Vegetation transpiration
-	EI = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/EI_Annual.nc") # Vegetation transpiration
-	ES = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ES_Annual.nc") # Vegetation transpiration
-	EW = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/EW_Annual.nc") # Vegetation transpiration
-	ET = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc") # Vegetation transpiration
+	EC = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/EC_Mean_MAM.nc") # Vegetation transpiration
+	EI = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/EI_Mean_MAM.nc") # Vegetation transpiration
+	ES = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/ES_Mean_MAM.nc") # Vegetation transpiration
+	EW = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/EW_Mean_MAM.nc") # Vegetation transpiration
+	ET = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/ET_Mean_MAM.nc") # Vegetation transpiration
 	EC = EC.fillna(0)
 	EI = EI.fillna(0)
 	ES = ES.fillna(0)
@@ -55,20 +59,20 @@ if analyses_mode =="Annual":
 	ECI = EC + EI  # canopy evapotranspiration
 	ESW = ES + EW  # soil/water/ice/snow evaporation
 
-	EC2003 = EC.sel(year=2003)
-	EC2013 = EC.sel(year=2013)
-	EI2003 = EI.sel(year=2003)
-	EI2013 = EI.sel(year=2013)
-	ES2003 = ES.sel(year=2003)
-	ES2013 = ES.sel(year=2013)
-	EW2003 = EW.sel(year=2003)
-	EW2013 = EW.sel(year=2013)
-	ET2003 = ET.sel(year=2003)
-	ET2013 = ET.sel(year=2013)
-	ECI2003 = ECI.sel(year=2003)
-	ECI2013 = ECI.sel(year=2013)
-	ESW2003 = ESW.sel(year=2003)
-	ESW2013 = ESW.sel(year=2013)
+	EC2003 = EC.loc['2003'].squeeze()
+	EC2013 = EC.loc['2013'].squeeze()
+	EI2003 = EI.loc['2003'].squeeze()
+	EI2013 = EI.loc['2013'].squeeze()
+	ES2003 = ES.loc['2003'].squeeze()
+	ES2013 = ES.loc['2013'].squeeze()
+	EW2003 = EW.loc['2003'].squeeze()
+	EW2013 = EW.loc['2013'].squeeze()
+	ET2003 = ET.loc['2003'].squeeze()
+	ET2013 = ET.loc['2013'].squeeze()
+	ECI2003 = ECI.loc['2003'].squeeze()
+	ECI2013 = ECI.loc['2013'].squeeze()
+	ESW2003 = ESW.loc['2003'].squeeze()
+	ESW2013 = ESW.loc['2013'].squeeze()
 	
 	EC_diff = EC2013 - EC2003
 	EI_diff = EI2013 - EI2003
@@ -300,4 +304,6 @@ coords={
 	"ID" : range(len(final_lst_lulc)),
 	"Conversion":conversion_type}
 )
-ds.to_netcdf(out_dir+"Sensitivity/EndPoints/Confusion_Table_v1.nc")
+ds.to_netcdf(out_dir+"Sensitivity/EndPoints/Seasonal/Confusion_Table_MAM.nc")
+t2 = time.time()
+print(f"Total elapssed time:{t2-t1}")
