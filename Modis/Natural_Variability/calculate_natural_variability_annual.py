@@ -3,7 +3,6 @@ if __name__ == "__main__":
     import xarray as xr
     import rioxarray
     import numpy as np
-    import glob
     import pandas as pd
     from numpy.lib.stride_tricks import as_strided
     import matplotlib.pyplot as plt
@@ -12,15 +11,17 @@ if __name__ == "__main__":
     # -----------------------------------------------------------------
     # 		Prameteres and paths
     # -----------------------------------------------------------------
-    analyses_mode = "Seasonal"  # ----> Monthly/Growing/Annual/Seasonal
+    analyses_mode = "Annual"  # ----> Monthly/Growing/Annual/Seasonal
     # in_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_data/Final_data/"
     # out_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
     input_dir = "/data/ABOVE/Final_data/"
-    output_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/outputs/"
+    output_dir = (
+        "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses"
+        "/outputs/")
 
     nband = 7  # number of LUC classes in the analysis
     win_size = 51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)
-    EndPoint = False
+    EndPoint = True
     if EndPoint:
         years = (2003, 2013)
     else:
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         win_size_half = int(np.floor(win_size / 2))
 
         # pad with nan to get correct window for the edges
-        if type == "LST":
+        if type == "OTHER":
             data = np.pad(
                 data,
                 (win_size_half, win_size_half),
@@ -103,7 +104,9 @@ if __name__ == "__main__":
 
         return data_view
 
-    def calculate_nv(LST,
+    def calculate_nv(LST_MEAN,
+                     ALBEDO,
+                     ET,
                      LUC,
                      nband,
                      years,
@@ -128,8 +131,12 @@ if __name__ == "__main__":
             # Taking the difference in LST and LUC
             delta_abs_luc = abs(luc_year2 - luc_year1)
             delta_luc_loss_gain = luc_year2 - luc_year1
-            delta_lst_total = LST.sel(year=year2) - LST.sel(year=year1)
 
+            delta_lst_mean_total = LST_MEAN.sel(year=year2) - LST_MEAN.sel(
+                year=year1)
+            delta_albedo_total = ALBEDO.sel(year=year2) - ALBEDO.sel(
+                year=year1)
+            delta_et_total = ET.sel(year=year2) - ET.sel(year=year1)
             # In the original LUC dataset, when there is no class present the pixels where assigned 0. To avoid confusion
             # with pixels that that actually there was a class but it hasn't been changed (e.g.luc2006-luc2005 = 0)
             # we set the pixle values that are zero in both years (non existance classes) to nan.
@@ -148,10 +155,17 @@ if __name__ == "__main__":
             # Extracting pixels that have been changed
             # True --> changed; False --> not changed
             changed_pixels_mask = no_change(changed_pixels, "band")
-
-            delta_lst_not_changed = delta_lst_total.where(
+            delta_lst_mean_not_changed = delta_lst_mean_total.where(
                 changed_pixels_mask == False)
-            delta_lst_changed = delta_lst_total.where(
+            delta_lst_mean_changed = delta_lst_mean_total.where(
+                changed_pixels_mask == True)
+            delta_albedo_not_changed = delta_albedo_total.where(
+                changed_pixels_mask == False)
+            delta_albedo_changed = delta_albedo_total.where(
+                changed_pixels_mask == True)
+            delta_et_not_changed = delta_et_total.where(
+                changed_pixels_mask == False)
+            delta_et_changed = delta_et_total.where(
                 changed_pixels_mask == True)
             delta_abs_luc_not_changed = delta_abs_luc.where(
                 changed_pixels_mask == False)
@@ -178,17 +192,40 @@ if __name__ == "__main__":
 
             # Stridind up the LST and LUC at changed and not changed areas
             # -------------------------------------------------------------
-            lst_val_not_changed = delta_lst_not_changed.values
-            lst_val_not_changed_view = window_view(lst_val_not_changed,
-                                                   win_size,
-                                                   type="LST")
-            lst_val_not_changed_view.shape
+            lst_mean_val_not_changed = delta_lst_mean_not_changed.values
+            lst_mean_val_not_changed_view = window_view(
+                lst_mean_val_not_changed, win_size, type="OTHER")
+            lst_mean_val_not_changed_view.shape
 
-            lst_val_changed = delta_lst_changed.values
-            lst_val_changed_view = window_view(lst_val_changed,
-                                               win_size,
-                                               type="LST")
-            lst_val_changed_view.shape
+            lst_mean_val_changed = delta_lst_mean_changed.values
+            lst_mean_val_changed_view = window_view(lst_mean_val_changed,
+                                                    win_size,
+                                                    type="OTHER")
+            lst_mean_val_changed_view.shape
+
+            albedo_val_not_changed = delta_albedo_not_changed.values
+            albedo_val_not_changed_view = window_view(albedo_val_not_changed,
+                                                      win_size,
+                                                      type="OTHER")
+            albedo_val_not_changed_view.shape
+
+            albedo_val_changed = delta_albedo_changed.values
+            albedo_val_changed_view = window_view(albedo_val_changed,
+                                                  win_size,
+                                                  type="OTHER")
+            albedo_val_changed_view.shape
+
+            et_val_not_changed = delta_et_not_changed.values
+            et_val_not_changed_view = window_view(et_val_not_changed,
+                                                  win_size,
+                                                  type="OTHER")
+            et_val_not_changed_view.shape
+
+            et_val_changed = delta_et_changed.values
+            et_val_changed_view = window_view(et_val_changed,
+                                              win_size,
+                                              type="OTHER")
+            et_val_changed_view.shape
 
             luc_val_not_changed = delta_abs_luc_not_changed.values
             luc_val_not_changed_view = window_view(luc_val_not_changed,
@@ -203,23 +240,38 @@ if __name__ == "__main__":
             luc_val_changed_view.shape
 
             # Calculate the natural variability
-            delta_natural_variability = np.empty(
-                (lst_val_changed_view.shape[0], lst_val_changed_view.shape[1]))
-            delta_natural_variability[:] = np.nan
+            delta_natural_variability_lst_mean = np.empty(
+                (lst_mean_val_changed_view.shape[0],
+                 lst_mean_val_changed_view.shape[1]))
+            delta_natural_variability_lst_mean[:] = np.nan
 
-            for i in range(0, lst_val_changed_view.shape[0]):
-                for j in range(0, lst_val_changed_view.shape[1]):
+            delta_natural_variability_albedo = np.empty(
+                (albedo_val_changed_view.shape[0],
+                 albedo_val_changed_view.shape[1]))
+            delta_natural_variability_albedo[:] = np.nan
+
+            delta_natural_variability_et = np.empty(
+                (et_val_changed_view.shape[0], et_val_changed_view.shape[1]))
+            delta_natural_variability_et[:] = np.nan
+
+            for i in range(0, lst_mean_val_changed_view.shape[0]):
+                for j in range(0, lst_mean_val_changed_view.shape[1]):
 
                     # Each loops goes through each window
                     # Read the lst and LUC value of changed and not changed pixels
-                    lst_changed_tmp = lst_val_changed_view[i, j]
+                    lst_mean_changed_tmp = lst_mean_val_changed_view[i, j]
+                    lst_mean_not_changed_tmp = lst_mean_val_not_changed_view[i,
+                                                                             j]
+                    albedo_not_changed_tmp = albedo_val_not_changed_view[i, j]
+                    et_not_changed_tmp = et_val_not_changed_view[i, j]
+
                     luc_changed_tmp = luc_val_changed_view[i, j]
                     luc_not_changed_tmp = luc_val_not_changed_view[i, j]
-                    lst_not_changed_tmp = lst_val_not_changed_view[i, j]
 
                     # If the center pixel of the window is nan (meaning there is no LULC change in that pixel) skip it
                     win_size_half = int(np.floor(win_size / 2))
-                    if np.isnan(lst_changed_tmp[win_size_half, win_size_half]):
+                    if np.isnan(lst_mean_changed_tmp[win_size_half,
+                                                     win_size_half]):
                         continue
 
                     # if nan returns False, else returns True: This line tell us what classes exist (True values) in that central pixel
@@ -235,22 +287,40 @@ if __name__ == "__main__":
                         # False otherwise
                     )  # This mask is all pixels that have same class as the central pixel
 
-                    lst_not_changed_tmp_masked = np.where(
-                        mask == True, lst_not_changed_tmp, np.nan)
+                    lst_mean_not_changed_tmp_masked = np.where(
+                        mask == True, lst_mean_not_changed_tmp, np.nan)
+                    albedo_not_changed_tmp_masked = np.where(
+                        mask == True, albedo_not_changed_tmp, np.nan)
+                    et_not_changed_tmp_masked = np.where(
+                        mask == True, et_not_changed_tmp, np.nan)
                     dist_mask = np.where(mask == True, dist_m, np.nan)
                     dist_mask[win_size_half, win_size_half] = np.nan
-                    weighted_lst = lst_not_changed_tmp_masked / dist_mask
+                    weighted_lst_mean = lst_mean_not_changed_tmp_masked / dist_mask
+                    weighted_albedo = albedo_not_changed_tmp_masked / dist_mask
+                    weighted_et = et_not_changed_tmp_masked / dist_mask
 
-                    delta_natural_variability[
+                    delta_natural_variability_lst_mean[i, j] = np.nansum(
+                        weighted_lst_mean) / np.nansum(1 / dist_mask)
+
+                    delta_natural_variability_albedo[i, j] = np.nansum(
+                        weighted_albedo) / np.nansum(1 / dist_mask)
+                    delta_natural_variability_et[
                         i,
-                        j] = np.nansum(weighted_lst) / np.nansum(1 / dist_mask)
-
+                        j] = np.nansum(weighted_et) / np.nansum(1 / dist_mask)
             # Converting a numpy array to xarray dataframe
-            delta_lst_nv = delta_lst_total.copy(data=delta_natural_variability)
+            delta_lst_mean_nv = delta_lst_mean_total.copy(
+                data=delta_natural_variability_lst_mean)
 
+            delta_albedo_nv = delta_albedo_total.copy(
+                data=delta_natural_variability_albedo)
+
+            delta_et_nv = delta_et_total.copy(
+                data=delta_natural_variability_et)
             # ------------------------------------------------------------
             # Calulating the delta LST casusd by changes in LUC
-            delta_lst_lulc = delta_lst_changed - delta_lst_nv
+            delta_lst_mean_lulc = delta_lst_mean_changed - delta_lst_mean_nv
+            delta_albedo_lulc = delta_albedo_changed - delta_albedo_nv
+            delta_et_lulc = delta_et_changed - delta_et_nv
             # ------------------------------------------------------------
 
             # Savinng the results
@@ -258,37 +328,9 @@ if __name__ == "__main__":
                 "y": "lat",
                 "x": "lon"
             })
+
             changed_pixels_mask.to_netcdf(out_dir + "changed_pixels_mask_" +
                                           str(year2) + ".nc")
-
-            delta_lst_total = delta_lst_total.rename({"y": "lat", "x": "lon"})
-            delta_lst_total.to_netcdf(out_dir + "delta_lst_total_" +
-                                      str(year2) + ".nc")
-
-            delta_lst_changed = delta_lst_changed.rename({
-                "y": "lat",
-                "x": "lon"
-            })
-            delta_lst_changed.to_netcdf(out_dir + "delta_lst_changed_" +
-                                        str(year2) + ".nc")
-
-            delta_lst_not_changed = delta_lst_not_changed.rename({
-                "y": "lat",
-                "x": "lon"
-            })
-            delta_lst_not_changed.to_netcdf(out_dir +
-                                            "delta_lst_not_changed_" +
-                                            str(year2) + ".nc")
-
-            delta_lst_nv = delta_lst_nv.rename({"y": "lat", "x": "lon"})
-            delta_lst_nv.to_netcdf(out_dir +
-                                   "delta_lst_changed_nv_component_" +
-                                   str(year2) + ".nc")
-
-            delta_lst_lulc = delta_lst_lulc.rename({"y": "lat", "x": "lon"})
-            delta_lst_lulc.to_netcdf(out_dir +
-                                     "delta_lst_changed_lulc_component_" +
-                                     str(year2) + ".nc")
 
             delta_abs_luc_changed = delta_abs_luc_changed.rename({
                 "y": "lat",
@@ -325,6 +367,109 @@ if __name__ == "__main__":
             delta_luc_loss_gain_not_changed.to_netcdf(
                 out_dir + "delta_luc_loss_gain_not_changed_" + str(year2) +
                 ".nc")
+
+            delta_lst_mean_total = delta_lst_mean_total.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_lst_mean_total.to_netcdf(out_dir + "delta_lst_total_" +
+                                           str(year2) + ".nc")
+
+            delta_lst_mean_changed = delta_lst_mean_changed.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_lst_mean_changed.to_netcdf(out_dir +
+                                             "delta_lst_mean_changed_" +
+                                             str(year2) + ".nc")
+
+            delta_lst_mean_not_changed = delta_lst_mean_not_changed.rename({
+                "y":
+                "lat",
+                "x":
+                "lon"
+            })
+            delta_lst_mean_not_changed.to_netcdf(
+                out_dir + "delta_lst_mean_not_changed_" + str(year2) + ".nc")
+
+            delta_lst_mean_nv = delta_lst_mean_nv.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_lst_mean_nv.to_netcdf(
+                out_dir + "delta_lst_mean_changed_nv_component_" + str(year2) +
+                ".nc")
+
+            delta_lst_mean_lulc = delta_lst_mean_lulc.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_lst_mean_lulc.to_netcdf(
+                out_dir + "delta_lst_mean_changed_lulc_component_" +
+                str(year2) + ".nc")
+
+            delta_albedo_total = delta_albedo_total.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_albedo_total.to_netcdf(out_dir + "delta_albedo_total_" +
+                                         str(year2) + ".nc")
+
+            delta_albedo_changed = delta_albedo_changed.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_albedo_changed.to_netcdf(out_dir + "delta_albedo_changed_" +
+                                           str(year2) + ".nc")
+
+            delta_albedo_not_changed = delta_albedo_not_changed.rename({
+                "y":
+                "lat",
+                "x":
+                "lon"
+            })
+            delta_albedo_not_changed.to_netcdf(out_dir +
+                                               "delta_albedo_not_changed_" +
+                                               str(year2) + ".nc")
+
+            delta_albedo_nv = delta_albedo_nv.rename({"y": "lat", "x": "lon"})
+            delta_albedo_nv.to_netcdf(out_dir +
+                                      "delta_albedo_changed_nv_component_" +
+                                      str(year2) + ".nc")
+
+            delta_albedo_lulc = delta_albedo_lulc.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_albedo_lulc.to_netcdf(
+                out_dir + "delta_albedo_changed_lulc_component_" + str(year2) +
+                ".nc")
+            delta_et_total = delta_et_total.rename({"y": "lat", "x": "lon"})
+            delta_et_total.to_netcdf(out_dir + "delta_et_total_" + str(year2) +
+                                     ".nc")
+
+            delta_et_changed = delta_et_changed.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_et_changed.to_netcdf(out_dir + "delta_et_changed_" +
+                                       str(year2) + ".nc")
+
+            delta_et_not_changed = delta_et_not_changed.rename({
+                "y": "lat",
+                "x": "lon"
+            })
+            delta_et_not_changed.to_netcdf(out_dir + "delta_et_not_changed_" +
+                                           str(year2) + ".nc")
+
+            delta_et_nv = delta_et_nv.rename({"y": "lat", "x": "lon"})
+            delta_et_nv.to_netcdf(out_dir + "delta_et_changed_nv_component_" +
+                                  str(year2) + ".nc")
+
+            delta_et_lulc = delta_et_lulc.rename({"y": "lat", "x": "lon"})
+            delta_et_lulc.to_netcdf(out_dir +
+                                    "delta_et_changed_lulc_component_" +
+                                    str(year2) + ".nc")
 
         if EndPoint == False:
             # years = pd.date_range(start=years[1].year.dt.year, end=years[len(years)-1].year.dt.year, freq="A").year
@@ -555,31 +700,38 @@ if __name__ == "__main__":
         LST = LST - 273.15
         # Matrix of distance of each pixel from the central pixel used in inverse
         dist_m = dist_matrix(win_size, win_size)
-        calculate_nv(LST, LUC, nband, years, win_size, dist_m, out_dir)
-        print(
-            "The growing season results are saved in /data/home/hamiddashti/mnt"
-            "/nasa_above/working/modis_analyses/outputs/Natural_Variability/"
-            "Natural_Variability_Growing_outputs/")
+        calculate_nv(LST, ALBEDO, ET, LUC, nband, years, win_size, dist_m,
+                     out_dir)
+        print("The growing season results are saved in" + out_dir)
+
     elif analyses_mode == "Annual":
         # ------------------------------------------------------------------
         # 				Calculate the delta LST and LUC Annual
         # ------------------------------------------------------------------
         print("Analyses is in Annual mode\n")
-        in_dir = input_dir + "Annual_Mean/"
-        out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses"
-        "/outputs/Natural_Variability/Natural_Variability_Annual_outputs/"
-        "EndPoints/"
+        out_dir = (
+            "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses"
+            "/outputs/Natural_Variability/Natural_Variability_Annual_outputs/"
+            "EndPoints/")
         # annual_lst = xr.open_dataarray(config_paths['annual_lst_path'])
         LUC = xr.open_dataarray(input_dir + "LUC/LULC_2003_2014.nc")
-        LST = xr.open_dataarray(in_dir + "lst_mean_annual.nc")
+        LST = xr.open_dataarray(input_dir +
+                                "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
         LST = LST.rename({"lat": "y", "lon": "x"})
-        LST = LST - 273.15
+        LST = LST
+        ALBEDO = xr.open_dataarray(
+            input_dir + "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+        ET = xr.open_dataarray(input_dir + "ET_Final/Annual_ET/ET_Annual.nc")
+        LUC = LUC.isel(y=range(1400, 1600), x=range(4400, 4600))
+        LST = LST.isel(y=range(1400, 1600), x=range(4400, 4600))
+        ALBEDO = ALBEDO.isel(y=range(1400, 1600), x=range(4400, 4600))
+        ET = ET.isel(y=range(1400, 1600), x=range(4400, 4600))
         # Matrix of distance of each pixel from the central pixel used in inverse
         dist_m = dist_matrix(win_size, win_size)
-        calculate_nv(LST, LUC, nband, years, win_size, dist_m, out_dir)
-        print("The annual results are saved in /data/home/hamiddashti/mnt/"
-              "nasa_above/working/modis_analyses/outputs/Natural_Variability/"
-              "Natural_Variability_Annual_outputs/")
+        calculate_nv(LST, ALBEDO, ET, LUC, nband, years, win_size, dist_m,
+                     out_dir)
+        print("The annual results are saved in" + out_dir)
+
     elif analyses_mode == "Seasonal":
         print("Calculating seasonal natural variablity and LUC compontents of"
               " \u0394LST")
