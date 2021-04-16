@@ -1,36 +1,29 @@
-import xarray as xr
-import rioxarray
-from pyproj import CRS
-from rasterio.warp import reproject, Resampling
+import pandas as pd
 import numpy as np
-from pyproj import CRS
 
-in_dir ="/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/" 
+a = np.random.rand(1000)
+b = np.random.rand(1000) * 10
+c = np.random.rand(1000) * 100
+# groups = np.array([1, 1, 2, 2, 2, 2, 3, 3, 4, 4])
+df = pd.DataFrame({"a": a, "b": b, "c": c})
 
-ds = xr.open_dataset(
-    "/data/ABOVE/MODIS/LST_ORIGINAL_PROJ/MYD11A2.006_1km_aid0001.nc"
-)
+luc_bins = np.linspace(0.01, 1, 100)
 
-lc = xr.open_rasterio(
-    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/ABoVE_LandCover_Simplified_Bh01v02.tif"
-)
+df["bins"] = pd.cut(df["a"], bins=luc_bins)
+
+df.groupby("bins").sum() 
 
 
 
-ds.LST_Day_1km.attrs
-a = ds.crs.attrs
-cc = CRS.from_cf(a)
-cc.to_string()
-xds = ds.rename_dims({"xdim": "x", "ydim": "y"})
 
-xds.coords["x"] = xds.x
-xds.coords["y"] = xds.y
-xds.coords["time"] = xds.time
+def my_fun(x, y):
+    tmp = np.sum((x * y)) / np.sum(y)
+    return tmp
 
-xds.rio.write_crs(cc.to_string(), inplace=True)
 
-ds.rio.write_crs(ds.crs.attrs)
-da = xds["LST_Day_1km"].isel(time=0)
-da = da.reset_coords(["xdim","ydim"],drop=True)
-xds_reproj2 = da.rio.reproject(4326)
-xds_reproj2.to_netcdf(in_dir+"test5.nc")
+df.groupby("groups").apply(lambda d: my_fun(d["a"],d["b"]))
+
+df.groupby("groups").apply(my_fun, ("a", "b"))
+
+x = df[(df["luc"] > 0.01) & (df["luc"] <= 0.02)]["lst"]
+y = df[(df["luc"] > 0.01) & (df["luc"] <= 0.02)]["dist"]

@@ -4,22 +4,22 @@ from osgeo import gdal
 gdal.UseExceptions()
 import glob
 import xarray as xr
+import pandas as pd
 
 in_dir = ("/data/ABOVE/LANDSAT/LANDCOVER/Annual_Landcover_ABoVE_1691/"
-          "data/years/mosaic/")
+          "data/mosaic/")
 out_dir = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
            "outputs/percent_cover/")
-years = list(np.arange(1984, 2015))
+# years = list(np.arange(1984, 2015))
 
+years = pd.date_range(start="1984", end="2015", freq="Y").year
+
+fname_all = []
 for year in years:
-
-    fname = str(year) + "_Final_Mosaic.tif"
-    print(fname)
-    # for i in np.arange(1, 2):
-
+    print("calculate percent cover year --> " + str(year))
+    fname = "mosaic_reproject_" + str(year) + ".tif"
     # Get data from raster with classifications
-
-    ds = gdal.Open(fname)
+    ds = gdal.Open(in_dir + fname)
     band = ds.GetRasterBand(1)
     class_ar = band.ReadAsArray()
     gt = ds.GetGeoTransform()
@@ -54,7 +54,7 @@ for year in years:
     src_ds = gdal.Open(out_dir + bit_name)
 
     # Open a template or copy array, for dimensions and NODATA mask
-    cpy_ds = gdal.Open(out_dir + "lst_ref.tif")
+    cpy_ds = gdal.Open(in_dir + "lst_ref.tif")
     band = cpy_ds.GetRasterBand(1)
 
     # WARNING WARNING WARNING: MAKE SURE NODATA IS ACTUALY NAN
@@ -89,6 +89,16 @@ for year in years:
             # band.SetNoDataValue(NODATA)
         # Save and close all rasters
         src_ds = cpy_ds = dst_ds = band = None
+
+        fname_all.append(out_dir + outname)
     else:
         print("The No data value of the modis is not NAN!!")
         break
+
+chunks = {"y": 2692, "x": 8089}
+da = xr.concat([xr.open_rasterio(f, chunks=chunks) for f in fname_all],
+               dim=years)
+da = da.rename({"concat_dim": "year", "x": "lon", "y": "lat"})
+da_2003_2014 = da.loc[2003:2014]
+da.to_netcdf(out_dir + "LULC_10.nc")
+da_2003_2014.to_netcdf(out_dir + "LULC_10_2003_2014.nc")

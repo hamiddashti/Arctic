@@ -71,7 +71,7 @@ def produce_change_mask(luc, years, thresh):
     return changed_pixels_mask, dlcc, dlcc_abs
 
 
-def window_view(data, win_size, type):
+def window_view(data, win_size, type, nband):
     # This is for creating moving windows
     import numpy as np
     from numpy.lib.stride_tricks import as_strided
@@ -89,7 +89,7 @@ def window_view(data, win_size, type):
         view_shape = tuple(np.subtract(data.shape, sub_shape) + 1) + sub_shape
         data_view = as_strided(data, view_shape, data.strides * 2)
     elif type == "LCC":
-        nband = 7  # number of classes
+        nband = nband  # number of classes
         data = np.pad(
             data,
             (
@@ -139,30 +139,34 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
     # -------------------------------------------------------------
     ddata_changed_view = window_view(ddata_changed.values,
                                      win_size,
-                                     type="OTHER")
+                                     type="OTHER",
+                                     nband=nband)
 
     ddata_not_changed_view = window_view(ddata_not_changed.values,
                                          win_size,
-                                         type="OTHER")
+                                         type="OTHER",
+                                         nband=nband)
     dlcc_abs_changed_view = window_view(dlcc_abs_changed.values,
                                         win_size,
-                                        type="LCC")
+                                        type="LCC",
+                                        nband=nband)
     dlcc_abs_not_changed_view = window_view(dlcc_abs_not_changed.values,
                                             win_size,
-                                            type="LCC")
+                                            type="LCC",
+                                            nband=nband)
 
     ddata_natural_variability = np.empty(
         (ddata_changed_view.shape[0], ddata_changed_view.shape[1]))
-
+    ddata_natural_variability[:] = np.nan
     for i in range(0, ddata_not_changed_view.shape[0]):
         for j in range(0, ddata_not_changed_view.shape[1]):
 
             # Each loops goes through each window
             # Read the lst and LUC value of changed and not changed pixels
-            ddata_changed_tmp = ddata_changed_view[i, j]
-            ddata_not_changed_tmp = ddata_not_changed_view[i, j]
-            lc_changed_tmp = dlcc_abs_changed_view[i, j]
-            lc_not_changed_tmp = dlcc_abs_not_changed_view[i, j]
+            ddata_changed_tmp = ddata_changed_view[i, j, :, :]
+            ddata_not_changed_tmp = ddata_not_changed_view[i, j, :, :]
+            lc_changed_tmp = dlcc_abs_changed_view[i, j, :, :, :]
+            lc_not_changed_tmp = dlcc_abs_not_changed_view[i, j, :, :, :]
 
             # If the center pixel of the window is nan
             # (meaning there is no LULC change in that pixel) skip it
@@ -228,6 +232,7 @@ years = [2003, 2013]
 win_size = 51
 dist_m = dist_matrix(win_size, win_size)
 thresh = 0.01
+nband = 10
 # Detecting the changed pixels
 changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
                                                      years=years,
@@ -251,19 +256,10 @@ for i in range(len(var_names)):
                                      years=years,
                                      win_size=win_size,
                                      dist_m=dist_m,
-                                     nband=7,
+                                     nband=nband,
                                      out_dir=out_dir)
 
     nv.to_netcdf(out_dir + var_name + "_nv.nc")
     lcc.to_netcdf(out_dir + var_name + "_lcc.nc")
     var_changed.to_netcdf(out_dir + var_name + "_changed.nc")
     var_not_changed.to_netcdf(out_dir + var_name + "_not_changed.nc")
-
-da = xr.open_dataarray(out_dir + "changed_pixels.nc")
-da.plot()
-plt.savefig(
-    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/changed.png"
-)
-
-da.sum()
-100 * da.sum() / (da.shape[0] * da.shape[1])
