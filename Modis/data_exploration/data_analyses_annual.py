@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 import sklearn
 import statsmodels.api as sm
+import seaborn as sns
 
 
 def outliers_index(data, m=3):
@@ -16,7 +17,7 @@ def outliers_index(data, m=3):
     return ~(s < m)
 
 
-def myfunc(data, val_col, weight_col):
+def binmean(data, val_col, weight_col):
     mean = np.nansum(data[val_col] * data[weight_col]) / np.nansum(
         data[weight_col])
     return mean
@@ -65,176 +66,253 @@ def bins_mean(dvar, dlc, thresh, w, type):
     return counts, total_mean, bins_mean
 
 
-in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
-out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
-
-dlcc = xr.open_dataarray(
-    in_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlcc.nc")
-dlst_xr = xr.open_dataarray(
-    in_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_mean_lcc.nc")
-# I = outliers_index(dlst, 5)
-# dlst_clean = dlst.where(I == False)
-ct = xr.open_dataset(
-    in_dir + "Sensitivity/EndPoints/Annual/all_bands/Confusion_Table_final.nc")
-
-lc = dlcc.isel(band=0)
-I = outliers_index(dlst_xr, 3)
-dlst_clean = dlst_xr.where(I == False)
-lc_clean = lc.where(I == False)
-dlst_clean2 = dlst_clean.where(lc.notnull() == True)
-#Xarray weighting
-weights = np.cos(np.deg2rad(dlst_clean2.lat))
-weights.name = "weights"
-dlst_clean_weighted = dlst_clean.weighted(weights)
-dlst_clean_weighted.mean(("lat", "lon"))
-
-# Binning
-weights = ct["WEIGHTS"]
-dlst = ct["DLST_MEAN_LCC"]
-I = outliers_index(dlst, 3)
-dlst_clean = dlst.where(I == False)
-weights_clean = weights.where(I == False)
-total_mean_all_categories = np.round(
-    (dlst_clean * weights_clean).sum() / weights_clean.sum(), 3)
-
-lc_names = [
-    "EF", "DF", "Shrub", "Herb", "Sparse", "Barren", "Fen", "Bog",
-    "Shallow_Littoral", "water"
-]
-
-for i in range(10):
-    print(i)
-    weights = ct["WEIGHTS"]
-    dlst = ct["DLST_MEAN_LCC"]
-    dlc_tmp = ct["DLCC"].isel(LC=i)
-    I = outliers_index(dlst, 5)
-    dlst_clean = dlst.where(I == False)
-    weights_clean = weights.where(I == False)
-    dlc_tmp_clean = dlc_tmp.where(I == False)
-
-    # dlc_bins = np.linspace(-1.0001, 1, 20002)
-    dlc_bins = np.linspace(-1.001, 1, 2002)
-
-    df = pd.DataFrame({
-        "dlst": dlst_clean,
-        "w": weights_clean,
-        "dlc": dlc_tmp_clean
-    })
-    df = df.dropna()
-    df["bins"] = pd.cut(df["dlc"], bins=dlc_bins)
-    bins_mean = df.groupby('bins').apply(myfunc, 'dlst', 'w')
-    # counts = df.groupby("bins").count()["dlc"]
+def fit_bins_ols(df, bins, var):
+    df["bins"] = pd.cut(df["dlcc"], bins=bins, include_lowest=True)
+    bins_mean = df.groupby('bins').apply(binmean, var, 'w')
+    # counts = df.groupby('bins').count()["dlcc"]
+    # bins_mean = bins_mean.where(counts > 10)
     wsums = df.groupby("bins").apply(lambda d: d["w"].sum())
-    total_mean_each_lc = (bins_mean * wsums).sum() / wsums.sum()
-
-    x = dlc_bins[:-1][bins_mean.notnull()]
+    x = bins[1:][bins_mean.notnull()]
     y = bins_mean[bins_mean.notnull()].values
     sample_weight = wsums[bins_mean.notnull()].values
-
     X = sm.add_constant(x)
     mod_wls = sm.WLS(y, X, weights=sample_weight)
     res_wls = mod_wls.fit()
     intercept, slope = np.round(res_wls.params, 3)
-    intercept_std, slope_std = np.round(res_wls.bse, 3)
-    eq_text = (f"$\Delta LST$ = {intercept}" + "\u00B1" + f"{intercept_std}" +
-               r"$\times$" + f"{slope} \u00B1" + f"{slope_std}" + "X")
-    plt.close()
-    fig, ax = plt.subplots(figsize=(5, 4))
-    # plt.plot(x, regr.predict(x), color='red', linewidth=1, label='Weighted model')
-    plt.plot(x,
-             res_wls.predict(X),
-             color='black',
-             linewidth=3,
-             label='Weighted model')
-    # plt.plot(x, m*x + b,color="r")
-    plt.scatter(dlc_bins[:-1], bins_mean, color="gray")
-    plt.title(lc_names[i], fontsize=14, fontweight="bold")
-    ax.tick_params(labelsize=12)
-    ax.axvline(0, ls='--', c="k", linewidth=1)
-    plt.text(0,
-             2.2,
-             eq_text,
-             horizontalalignment='center',
-             verticalalignment='center',
-             fontsize=12,
-             fontweight="bold",
-             color="black")
-    plt.tight_layout()
-    outname = str(lc_names[i]) + "_5.png"
-    save(out_dir + outname)
+    intercept_bse, slope_bse = np.round(res_wls.bse, 3)
+    predicts = res_wls.predict(X)
+    pvalues = res_wls.pvalues
+    out_list = [
+        x, y, sample_weight, intercept, intercept_bse, slope, slope_bse,
+        predicts, pvalues
+    ]
+    return out_list
 
+
+in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
+out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
+
+dlst_xr = xr.open_dataarray(
+    in_dir + "Natural_Variability/"
+    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_mean_lcc.nc")
+
+ct = xr.open_dataset(
+    in_dir + "Sensitivity/EndPoints/Annual/all_bands/Confusion_Table_final.nc")
 weights = ct["WEIGHTS"]
 dlst = ct["DLST_MEAN_LCC"]
-I = outliers_index(dlst, 5)
-dlst_clean = dlst.where(I == False)
-weights_clean = weights.where(I == False)
+det = ct["DET_LCC"]
+dalbedo = ct["DALBEDO_LCC"]
+dlcc = ct["DLCC"]
+confusion = ct["CONFUSION"]
+idx = ct["PIX_INDEX"]
+normalized_confusion = ct["NORMALIZED_CONFUSION"]
+I_dlst = outliers_index(dlst, 3)
+I_dalbedo = outliers_index(dalbedo, 3)
+I_det = outliers_index(det, 3)
 
-# Calculate gain lost mean
-total_mean_lost_list = []
-total_mean_lost_list_n = []
-total_mean_gain_list = []
-total_mean_gain_list_n = []
+dlst_clean = dlst.where(I_dlst == False)
+dalbedo_clean = dalbedo.where(I_dalbedo == False)
+det_clean = det.where(I_det == False)
+weights_clean = weights.where(I_dlst == False)
+dlcc_clean = dlcc.where(I_dlst == False)
+normalized_confusion_clean = normalized_confusion.where(I_dlst == False)
+
+palette = sns.color_palette("tab10")
+Total_Number_Pixels = dlst_xr.shape[0] * dlst_xr.shape[1]
+
+lc_names = [
+    "EF", "DF", "Shrub", "Herbaceous", "Sparse", "Barren", "Fen", "Bog",
+    "Shallow_Littoral", "water"
+]
+
+df_stats = pd.DataFrame(data=None,
+                        index=["\u0394LST[K]", "\u0394Albedo", "\u0394ET[mm]"],
+                        columns=["Max", "Min", "StD"])
+df_stats.loc["\u0394LST[K]", "Max"] = np.round(dlst_clean.max().values, 3)
+df_stats.loc["\u0394LST[K]", "Min"] = np.round(dlst_clean.min().values, 3)
+df_stats.loc["\u0394LST[K]", "StD"] = np.round(dlst_clean.std().values, 3)
+df_stats.loc["\u0394Albedo", "Max"] = np.round(dalbedo_clean.max().values, 3)
+df_stats.loc["\u0394Albedo", "Min"] = np.round(dalbedo_clean.min().values, 3)
+df_stats.loc["\u0394Albedo", "StD"] = np.round(dalbedo_clean.std().values, 3)
+df_stats.loc["\u0394ET[mm]", "Max"] = np.round(det_clean.max().values, 3)
+df_stats.loc["\u0394ET[mm]", "Min"] = np.round(det_clean.min().values, 3)
+df_stats.loc["\u0394ET[mm]", "StD"] = np.round(det_clean.std().values, 3)
+
+with open(out_dir + "results.txt", "w") as f:
+    f.write("This file contains the results of the annual data analyses\n")
+    f.write("----------------------------------------------------------\n\n")
+    f.write(
+        f"Total number of changed pixels (modis scale): {len(dlst_clean)}\n")
+    f.write(f"Total number of pixels (modis scale) covering the study area: \
+{Total_Number_Pixels}\n")
+    f.write(f"Percent change: \
+{np.round((len(dlst_clean)/Total_Number_Pixels)*100,3)}%\n\n")
+
+with open(out_dir + "results.txt", "a") as f:
+    f.write(df_stats.to_string(header=True, index=True))
+
+plt.close()
+fig, axs = plt.subplots(2, 4, figsize=(15, 6), facecolor='w', edgecolor='k')
+axs = axs.ravel()
+axs_counter = 0
 for i in range(10):
+    # Skip the bog and shallow and litteral classes
+    if (i == 7) | (i == 8):
+        continue
     print(i)
-    dlc_tmp = ct["DLCC"].isel(LC=i)
-    dlc_tmp_clean = dlc_tmp.where(I == False)
+    dlcc_tmp_clean = dlcc_clean.isel(LC=i)
+    df = pd.DataFrame({
+        "dlst": dlst_clean,
+        "dalbedo": dalbedo_clean,
+        "det": det_clean,
+        "w": weights_clean,
+        "dlcc": dlcc_tmp_clean
+    })
+    df = df.dropna()
 
-    n_lost, total_mean_lost = weighted_mean(dlc_tmp_clean, dlst_clean, 0.5,
-                                            weights_clean, "lost")
-    n_gain, total_mean_gain = weighted_mean(dlc_tmp_clean, dlst_clean, 0.5,
-                                            weights_clean, "gain")
-    total_mean_lost_list.append(total_mean_lost)
-    total_mean_gain_list.append(total_mean_gain)
-    total_mean_lost_list_n.append(n_lost)
-    total_mean_gain_list_n.append(n_gain)
+    # Bin data based on dLCC
+    dlcc_bins = np.linspace(-1.001, 1, 2002)
+    out = fit_bins_ols(df=df, bins=dlcc_bins, var="dlst")
+    eq_text = (f"\u0394LST = {out[3]}" + "(\u00B1" + f"{out[4]})" + "\u00D7" +
+               f"{out[5]}(\u00B1" + f"{out[6]})" + "X")
 
-lost_counts, total_lost_mean, bins_lost_mean = bins_mean(dvar=dlst_clean,
-                                                         dlc=lc_tmp_clean,
-                                                         thresh=0.5,
-                                                         w=weights_clean,
-                                                         type="lost")
-gain_counts, total_gain_mean, bins_gain_mean = bins_mean(dvar=dlst_clean,
-                                                         dlc=lc_tmp_clean,
-                                                         thresh=0.5,
-                                                         w=weights_clean,
-                                                         type="gain")
+    percent_change_subclass = np.round((len(df) / Total_Number_Pixels) * 100,
+                                       3)
 
-np.round(np.array(total_mean_lost_list), 3)
-np.round(np.array(total_mean_gain_list), 3)
-np.array(total_mean_lost_list_n)
-np.array(total_mean_gain_list_n)
-# Calculate the gain lost based on binning
+    with open(out_dir + "results.txt", "a") as f:
+        f.write(f"\n\nResults of {lc_names[i]} analyses\n")
+        f.write("------------------------------")
+        f.write(
+            f"\n\nPercent change in {lc_names[i]}:{percent_change_subclass}%\n")
+        f.write(f"\nLinear model fit to {lc_names[i]} gain/lost:\n")
+        f.write(eq_text)
+        f.write(
+            f"\nn:{len(out[0])}. NOTE Data are binned, refer to the manuscript\n"
+        )
+        f.write(f"p-value intercept: {np.round(out[8][0],3)}\n")
+        f.write(f"p-value slope: {np.round(out[8][1],3)}\n")
 
-bins_lost_mean.reset_index(drop=True, inplace=True)
-bins_gain_mean.reset_index(drop=True, inplace=True)
-df_concat = pd.concat([bins_lost_mean, bins_gain_mean], axis=1)
-# ----------------------------------
+    axs[axs_counter].scatter(x=out[0], y=out[1], color="gray")
+    axs[axs_counter].plot(out[0],
+                          out[7],
+                          color='black',
+                          linestyle="--",
+                          linewidth=3,
+                          label='Mean model')
+    axs[axs_counter].title.set_text(lc_names[i])
+    axs[axs_counter].tick_params(labelsize=14)
+    axs[axs_counter].axvline(0, ls='--', c="k", linewidth=1)
+    axs[axs_counter].text(0,
+                          max(out[1]) - 0.1,
+                          eq_text,
+                          horizontalalignment='center',
+                          verticalalignment='center',
+                          fontsize=8,
+                          fontweight="bold",
+                          color="black")
 
-weights = ct["WEIGHTS"]
-dlst = ct["DLST_MEAN_LCC"]
-dlc_tmp = ct["DLCC"].isel(LC=5)
-I = outliers_index(dlst, 3)
-dlst_clean = dlst.where(I == False)
-weights_clean = weights.where(I == False)
-dlc_tmp_clean = dlc_tmp.where(I == False)
+    if i == 0:
+        trans_list = [2, 4]
+    elif i == 1:
+        trans_list = [3, 6]
+    elif i == 2:
+        trans_list = [1, 3, 4, 6]
+    elif i == 3:
+        trans_list = [0, 9]
+    elif i == 4:
+        trans_list = [0, 2, 4, 5, 6]
+    elif i == 5:
+        trans_list = [0, 4, 9]
+    elif i == 6:
+        trans_list = [0, 1]
+    elif i == 9:
+        trans_list = [2, 3, 5]
 
-var_tmp = dlst_clean.where(dlc_tmp_clean > 0.5)
-w = weights_clean.where(dlc_tmp_clean > 0.5)
-(var_tmp * w).sum() / w.sum()
+    # for k in trans_list:
+    for k in range(10):
+        if (k == 7) | (k == 8):
+            continue
+        print(lc_names[k])
+        if k == i:
+            continue
 
-var_tmp = dlst_clean.where(dlc_tmp_clean < -0.5)
-w = weights_clean.where(dlc_tmp_clean < -0.5)
-(var_tmp * w).sum() / w.sum()
+        transintion_lost = normalized_confusion_clean[:, i, k]
+        df_lost = pd.DataFrame({
+            "dlst": dlst_clean,
+            "w": weights_clean,
+            "dlcc": -transintion_lost
+        })
+        df_lost = df_lost.dropna()
+        bins_lost = np.linspace(-1, 0, 1001)
+        df_lost["bins"] = pd.cut(df_lost["dlcc"],
+                                 bins=bins_lost,
+                                 include_lowest=True)
+        out_lost = fit_bins_ols(df=df_lost, bins=bins_lost, var="dlst")
+        transintion_gain = normalized_confusion_clean[:, k, i]
+        df_gain = pd.DataFrame({
+            "dlst": dlst_clean,
+            "w": weights_clean,
+            "dlcc": transintion_gain,
+        })
+        df_gain = df_gain.dropna()
+        bins_gain = np.linspace(0, 1, 1001)
+        out_gain = fit_bins_ols(df=df_gain, bins=bins_gain, var="dlst")
+        X = np.append(out_lost[0], out_gain[0])
+        Y = np.append(out_lost[1], out_gain[1])
+        reg_weights = np.append(out_lost[2], out_gain[2])
+        XX = sm.add_constant(X)
+        mod_wls = sm.WLS(Y, XX, weights=reg_weights)
+        res_wls = mod_wls.fit()
+        predicts = res_wls.predict(XX)
+        params = np.round(res_wls.params, 3)
+        params_bse = np.round(res_wls.bse, 3)
+        pvalues = np.round(res_wls.pvalues, 3)
+        eq_text_tmp = (f"\u0394LST={params[0]}" + "(\u00B1" +
+                       f"{params_bse[0]})" + "\u00D7" + f"{params[1]}(\u00B1" +
+                       f"{params_bse[1]})" + "X")
+        with open(out_dir+"results.txt","a") as f:
+            f.write(f"\n\nLinear model between {lc_names[i]}-{lc_names[k]}:\n")
+            f.write(eq_text_tmp)
+            f.write(f"\nn: {len(XX)}\n")
+            f.write(f"p-value intercept: {pvalues[0]}\n")
+            f.write(f"p-value slope: {pvalues[1]}\n")
+            
+        axs[axs_counter].plot(X,
+                              predicts,
+                              color=palette[k],
+                              linewidth=3,
+                              label=lc_names[k])
 
-w = weights_clean.where(dlst_clean.notnull())
-if type == "gain":
-    var_tmp = dlst_clean.where(dlc_tmp_clean > 0.5)
-    w = w.where(dlc_tmp_clean > 0.5)
-if type == "lost":
-    var_tmp = dlst_clean.where(dlc_tmp_clean < -0.5)
-    w = w.where(dlc_tmp_clean < -0.5)
+        axs[axs_counter].text(0.18,
+                              out[1].min() + 0.2,
+                              "Gain",
+                              ha="center",
+                              va="center",
+                              size=10,
+                              color="black",
+                              bbox=dict(boxstyle="rarrow,pad=0.3",
+                                        fc="gray",
+                                        ec="gray",
+                                        alpha=0.5,
+                                        lw=2))
+        axs[axs_counter].text(-0.17,
+                              out[1].min() + 0.2,
+                              "Loss",
+                              ha="center",
+                              va="center",
+                              size=10,
+                              color="black",
+                              bbox=dict(boxstyle="larrow,pad=0.3",
+                                        fc="gray",
+                                        ec="gray",
+                                        alpha=0.5,
+                                        lw=2))
+        axs[axs_counter].set_xlim(-1, 1)
+    axs_counter += 1
 
-(var_tmp * w).sum() / w.sum()
-w.notnull().sum()
+handles, labels = axs[0].get_legend_handles_labels()
+plt.legend(handles, labels, bbox_to_anchor=(1, 1))
+fig.supxlabel('Fractional change in land cover', fontsize=16)
+fig.supylabel("$\Delta LST$ [k]", fontsize=16)
+plt.tight_layout()
+save(out_dir + "test.png")
