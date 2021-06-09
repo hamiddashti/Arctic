@@ -5,9 +5,8 @@ from dask.diagnostics import ProgressBar
 import time
 
 in_dir = "/data/ABOVE/Final_data/"
-out_dir = ("/data/home/hamiddashti/mnt/nasa_above/working/"
-           "modis_analyses/outputs/Natural_Variability/"
-           "Natural_Variability_Annual_outputs_latest/EndPoints/")
+out_dir = ("/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/"
+           "Natural_Variability_Annual_outputs/geographic/geographic/")
 
 
 def dist_matrix(x_size, y_size):
@@ -53,28 +52,19 @@ albedo = ALBEDO.loc[2003:2013]
 # albedo = albedo.isel(lat=range(1400, 1600), lon=range(4400, 4600))
 
 dluc = luc.loc[2013] - luc.loc[2003]
-dluc_abs = abs(dluc) 
+dluc_abs = abs(dluc)
 tmp = xr.ufuncs.isnan(
-    dluc_abs.where((luc.loc[2013]== 0) & (luc.loc[2003] == 0)))
+    dluc_abs.where((luc.loc[2013] == 0) & (luc.loc[2003] == 0)))
 # To convert tmp from True/False to one/zero
 mask = tmp.where(tmp == True)
 dluc_abs = dluc_abs * mask
-changed_pixels = (dluc_abs>1).any("band")*1
+changed_pixels = (dluc_abs > 1).any("band") * 1
 
 dlst_total = lst.loc[2013] - lst.loc[2003]
-dlst_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
-
 dlst_day_total = lst_day.loc[2013] - lst_day.loc[2003]
-dlst_day_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
-
 dlst_night_total = lst_night.loc[2013] - lst_night.loc[2003]
-dlst_night_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
-
 det_total = et.loc[2013] - et.loc[2003]
-det_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
-
 dalbedo_total = albedo.loc[2013] - albedo.loc[2003]
-dalbedo_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
 
 dlst_total_roll = dlst_total.rolling({
     "lat": WINSIZE,
@@ -135,36 +125,14 @@ changed_pixels_roll = changed_pixels.rolling({
                                                  "lon_dim"
                                              }).values
 
-# def my_fun(i, j):
-#     # for i in range(0, changed_pixels.shape[0]):
-#     #     for j in range(0, changed_pixels.shape[1]):
-#     print(i)
-#     if changed_pixels[i, j] == 0:
-#         return
-#     mask = changed_pixels_roll.isel(lat=i, lon=j)
-#     dlst_tmp = dlst_total_roll.isel(lat=i, lon=j)
-#     dlst_mask = dlst_tmp.where(mask == 1)
-#     tmp_var1 = (dlst_mask / dist_m).sum()
-#     dlst_res_tmp = tmp_var1 / (np.nansum(dist_m[np.where(mask == 1)]))
-#     dlst_res[i, j] = dlst_res_tmp.values
-
-#     det_tmp = det_total_roll.isel(lat=i, lon=j)
-#     det_mask = det_tmp.where(mask == 1)
-#     tmp_var2 = (det_mask / dist_m).sum()
-#     det_res_tmp = tmp_var2 / (np.nansum(dist_m[np.where(mask == 1)]))
-#     det_res[i, j] = det_res_tmp.values
-
-#     dalbedo_tmp = dalbedo_total_roll.isel(lat=i, lon=j)
-#     dalbedo_mask = dalbedo_tmp.where(mask == 1)
-#     tmp_var3 = (dalbedo_mask / dist_m).sum()
-#     dalbedo_res_tmp = tmp_var3 / (np.nansum(dist_m[np.where(mask == 1)]))
-#     dalbedo_res[i, j] = dalbedo_res_tmp.values
-
-
-# def my_fun(i, j):
+dlst_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
+dlst_day_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
+dlst_night_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
+det_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
+dalbedo_res = xr.full_like(changed_pixels, fill_value=np.nan, dtype=float)
 for i in range(0, changed_pixels.shape[0]):
     for j in range(0, changed_pixels.shape[1]):
-        # print(i)
+        print(i)
         if changed_pixels[i, j] == 0:
             continue
         mask = changed_pixels_roll[i, j]
@@ -198,18 +166,6 @@ for i in range(0, changed_pixels.shape[0]):
         tmp_var5 = np.nansum(dalbedo_mask / dist_m_mask)
         dalbedo_res[i, j] = tmp_var5 / (np.nansum(dist_m_mask))
 
-
-t1 = time.time()
-delayed_results = []
-for i in range(0, changed_pixels.shape[0]):
-    for j in range(0, changed_pixels.shape[1]):
-        delayed_my_fun = dask.delayed(my_fun)(i, j)
-        delayed_results.append(delayed_my_fun)
-with ProgressBar():
-    results = dask.compute(*delayed_results)
-t2 = time.time()
-print(f"Time passed is:{t2-t1}")
-
 dlst_mean_lcc = dlst_total - dlst_res
 dlst_day_lcc = dlst_day_total - dlst_day_res
 dlst_night_lcc = dlst_night_total - dlst_night_res
@@ -238,3 +194,38 @@ dalbedo_res.to_netcdf(out_dir + "dalbedo_nv.nc")
 
 changed_pixels.to_netcdf(out_dir + "changed_pixels_mask.nc")
 dluc.to_netcdf(out_dir + "dluc.nc")
+
+# def my_fun(i, j):
+#     # for i in range(0, changed_pixels.shape[0]):
+#     #     for j in range(0, changed_pixels.shape[1]):
+#     print(i)
+#     if changed_pixels[i, j] == 0:
+#         return
+#     mask = changed_pixels_roll.isel(lat=i, lon=j)
+#     dlst_tmp = dlst_total_roll.isel(lat=i, lon=j)
+#     dlst_mask = dlst_tmp.where(mask == 1)
+#     tmp_var1 = (dlst_mask / dist_m).sum()
+#     dlst_res_tmp = tmp_var1 / (np.nansum(dist_m[np.where(mask == 1)]))
+#     dlst_res[i, j] = dlst_res_tmp.values
+
+#     det_tmp = det_total_roll.isel(lat=i, lon=j)
+#     det_mask = det_tmp.where(mask == 1)
+#     tmp_var2 = (det_mask / dist_m).sum()
+#     det_res_tmp = tmp_var2 / (np.nansum(dist_m[np.where(mask == 1)]))
+#     det_res[i, j] = det_res_tmp.values
+
+#     dalbedo_tmp = dalbedo_total_roll.isel(lat=i, lon=j)
+#     dalbedo_mask = dalbedo_tmp.where(mask == 1)
+#     tmp_var3 = (dalbedo_mask / dist_m).sum()
+#     dalbedo_res_tmp = tmp_var3 / (np.nansum(dist_m[np.where(mask == 1)]))
+#     dalbedo_res[i, j] = dalbedo_res_tmp.values
+# t1 = time.time()
+# delayed_results = []
+# for i in range(0, changed_pixels.shape[0]):
+#     for j in range(0, changed_pixels.shape[1]):
+#         delayed_my_fun = dask.delayed(my_fun)(i, j)
+#         delayed_results.append(delayed_my_fun)
+# with ProgressBar():
+#     results = dask.compute(*delayed_results)
+# t2 = time.time()
+# print(f"Time passed is:{t2-t1}")

@@ -2,6 +2,7 @@ import xarray as xr
 import matplotlib.pylab as plt
 from matplotlib.pylab import savefig as save
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -41,10 +42,11 @@ def dist_matrix(x_size, y_size):
     return dists
 
 
-def produce_change_mask(luc, years):
+def produce_change_mask(luc, years, thresh):
     import xarray as xr
     lc_year1 = luc.sel(year=years[0])
     lc_year2 = luc.sel(year=years[1])
+
     dlcc = lc_year2 - lc_year1
     dlcc_abs = abs(dlcc)
     # In the original LUC dataset, when there is no class present the
@@ -59,7 +61,7 @@ def produce_change_mask(luc, years):
     dlcc_abs = dlcc_abs * mask
     # If any of 7 classes has been changed more than 1 percent we call
     # that a changed pixels so we don't use them to find the natural variability
-    changed_pixels = dlcc_abs.where(dlcc_abs > 1)
+    changed_pixels = dlcc_abs.where(dlcc_abs > thresh)
     # Extracting pixels that have been changed
     # True --> changed; False --> not changed
     # changed_pixels_mask = xr.ufuncs.isfinite(changed_pixels).any("band")
@@ -67,7 +69,7 @@ def produce_change_mask(luc, years):
     return changed_pixels_mask, dlcc, dlcc_abs
 
 
-def window_view(data, win_size, type):
+def window_view(data, win_size, type, nband):
     # This is for creating moving windows
     import numpy as np
     from numpy.lib.stride_tricks import as_strided
@@ -85,7 +87,7 @@ def window_view(data, win_size, type):
         view_shape = tuple(np.subtract(data.shape, sub_shape) + 1) + sub_shape
         data_view = as_strided(data, view_shape, data.strides * 2)
     elif type == "LCC":
-        nband = 7  # number of classes
+        nband = nband  # number of classes
         data = np.pad(
             data,
             (
@@ -124,9 +126,8 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
     code. 
     ------------------------------------------------------------------------"""
     changed_pixels = changed_pixels.values
-    t1 = data.sel({"time": str(years[0])}).squeeze()
-    t2 = data.sel({"time": str(years[1])}).squeeze()
-    ddata = t2 - t1
+    ddata = data.sel(year=years[1]) - data.sel(year=years[0])
+
     ddata_changed = ddata.where(changed_pixels == True)
     ddata_not_changed = ddata.where(changed_pixels == False)
     dlcc_abs_changed = dlcc_abs.where(changed_pixels == True)
@@ -136,30 +137,34 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
     # -------------------------------------------------------------
     ddata_changed_view = window_view(ddata_changed.values,
                                      win_size,
-                                     type="OTHER")
+                                     type="OTHER",
+                                     nband=nband)
 
     ddata_not_changed_view = window_view(ddata_not_changed.values,
                                          win_size,
-                                         type="OTHER")
+                                         type="OTHER",
+                                         nband=nband)
     dlcc_abs_changed_view = window_view(dlcc_abs_changed.values,
                                         win_size,
-                                        type="LCC")
+                                        type="LCC",
+                                        nband=nband)
     dlcc_abs_not_changed_view = window_view(dlcc_abs_not_changed.values,
                                             win_size,
-                                            type="LCC")
+                                            type="LCC",
+                                            nband=nband)
 
     ddata_natural_variability = np.empty(
         (ddata_changed_view.shape[0], ddata_changed_view.shape[1]))
-
+    ddata_natural_variability[:] = np.nan
     for i in range(0, ddata_not_changed_view.shape[0]):
         for j in range(0, ddata_not_changed_view.shape[1]):
 
             # Each loops goes through each window
             # Read the lst and LUC value of changed and not changed pixels
-            ddata_changed_tmp = ddata_changed_view[i, j]
-            ddata_not_changed_tmp = ddata_not_changed_view[i, j]
-            lc_changed_tmp = dlcc_abs_changed_view[i, j]
-            lc_not_changed_tmp = dlcc_abs_not_changed_view[i, j]
+            ddata_changed_tmp = ddata_changed_view[i, j, :, :]
+            ddata_not_changed_tmp = ddata_not_changed_view[i, j, :, :]
+            lc_changed_tmp = dlcc_abs_changed_view[i, j, :, :, :]
+            lc_not_changed_tmp = dlcc_abs_not_changed_view[i, j, :, :, :]
 
             # If the center pixel of the window is nan
             # (meaning there is no LULC change in that pixel) skip it
@@ -193,26 +198,25 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
             ddata_natural_variability[
                 i, j] = np.nansum(weighted_ddata) / np.nansum(1 / dist_mask)
 
-    ddata_nv = t1.copy(data=ddata_natural_variability)
+    ddata_nv = data.sel(year=years[1]).copy(data=ddata_natural_variability)
     ddata_lcc = ddata - ddata_nv
     return [ddata_nv, ddata_lcc, ddata_changed, ddata_not_changed]
 
 
 in_dir = "/data/ABOVE/Final_data/"
-out_dir = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses"
-           "/outputs/Natural_Variability/Natural_Variability_Seasonal_outputs/"
-           "JJA/EndPoints/")
+out_dir = ("/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/"
+           "Natural_Variability_Sesonal_outputs/geographic/02_percent/")
 
-luc = xr.open_dataarray(in_dir + "LUC/LULC_2003_2014.nc")
+luc = xr.open_dataarray(in_dir + "LUC/LUC_10/LULC_10_2003_2014.nc")
 lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Seasonal_Mean/LST_Mean_JJA.nc")
+                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
 lst_day = xr.open_dataarray(in_dir +
-                            "LST_Final/LST/Seasonal_Mean/LST_Day_JJA.nc")
+                            "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
 lst_night = xr.open_dataarray(in_dir +
-                              "LST_Final/LST/Seasonal_Mean/LST_Night_JJA.nc")
+                              "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
 albedo = xr.open_dataarray(in_dir +
-                           "ALBEDO_Final/Seasonal_Albedo/Albedo_Mean_JJA.nc")
-et = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/ET_Mean_JJA.nc")
+                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
 
 # luc = luc.isel(y=range(1400, 1600), x=range(4400, 4600))
 # lst_mean = lst_mean.isel(lat=range(1400, 1600), lon=range(4400, 4600))
@@ -225,22 +229,24 @@ et = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/ET_Mean_JJA.nc")
 years = [2003, 2013]
 win_size = 51
 dist_m = dist_matrix(win_size, win_size)
+thresh = 0.02
+nband = 10
 
-# Detecting the changed pixels
-print("Extracting the changed pixels")
-changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc, years=years)
+print("Detecting changed pixels")
+# Detecting changed pixels
+changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
+                                                     years=years,
+                                                     thresh=thresh)
+
 changed_pixels.to_netcdf(out_dir + "changed_pixels.nc")
 dlcc.to_netcdf(out_dir + "dlcc.nc")
 dlcc_abs.to_netcdf(out_dir + "dlcc_abs.nc")
-# changed_pixels = xr.open_dataarray(out_dir+"changed_pixels.nc")
-# dlcc_abs = xr.open_dataarray(out_dir+"dlcc_abs.nc")
+
 var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
 datasets = [lst_mean, lst_day, lst_night, albedo, et]
 
 for i in range(len(var_names)):
-    print("calculate the natural variability:")
     var_name = var_names[i]
-
     print(var_name)
     data = datasets[i]
     [nv, lcc, var_changed,
@@ -250,11 +256,10 @@ for i in range(len(var_names)):
                                      years=years,
                                      win_size=win_size,
                                      dist_m=dist_m,
-                                     nband=7,
+                                     nband=nband,
                                      out_dir=out_dir)
 
     nv.to_netcdf(out_dir + var_name + "_nv.nc")
     lcc.to_netcdf(out_dir + var_name + "_lcc.nc")
     var_changed.to_netcdf(out_dir + var_name + "_changed.nc")
     var_not_changed.to_netcdf(out_dir + var_name + "_not_changed.nc")
-print("All Done!")

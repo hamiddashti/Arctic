@@ -10,6 +10,7 @@ from rasterio import features
 from rasterio.mask import mask
 import dask
 from dask.diagnostics import ProgressBar
+from xarray.core.duck_array_ops import count
 
 
 def mymask(tif, shp):
@@ -65,7 +66,6 @@ for i in range(0, NUMBER_OF_CLASSES):
         tmp = class_names[i] + "_" + class_names[j]
         conversion_type.append(tmp)
 
-
 in_dir = "/data/ABOVE/Final_data/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 
@@ -74,7 +74,7 @@ luc2013 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2013.tif')
 
 changed_pixels_mask = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/changed_pixels.nc")
+    "Natural_Variability_Annual_outputs/geographic/changed_pixels.nc")
 
 lst_mean = xr.open_dataarray(in_dir +
                              "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
@@ -83,6 +83,9 @@ lst_day = xr.open_dataarray(in_dir +
 lst_night = xr.open_dataarray(in_dir +
                               "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
 et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
+et = et.rename({"x": "lon", "y": "lat"})
+et = et.where(lst_mean.loc[2003:2015].notnull())
+
 albedo = et = xr.open_dataarray(in_dir +
                                 "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
 lst_mean_2003 = lst_mean.loc[2003]
@@ -97,56 +100,60 @@ albedo_2003 = albedo.loc[2003]
 albedo_2013 = albedo.loc[2013]
 dlst_mean_total = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_mean_changed.nc"
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_mean_changed.nc"
 )
 dlst_mean_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_mean_lcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_mean_lcc.nc"
+)
 dlst_mean_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_mean_nv.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_mean_nv.nc")
 
 dlst_day_total = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_day_changed.nc"
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_day_changed.nc"
 )
 dlst_day_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_day_lcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_day_lcc.nc")
 dlst_day_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_day_nv.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_day_nv.nc")
 dlst_night_total = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_night_changed.nc"
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_night_changed.nc"
 )
 dlst_night_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_night_lcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_night_lcc.nc"
+)
 dlst_night_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlst_night_nv.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlst_night_nv.nc"
+)
 det_total = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/et_changed.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/et_changed.nc")
 det_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/et_lcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/et_lcc.nc")
 det_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/et_nv.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/et_nv.nc")
 dalbedo_total = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/albedo_changed.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/albedo_changed.nc"
+)
 dalbedo_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/albedo_lcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/albedo_lcc.nc")
 dalbedo_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/EndPoints/all_bands/albedo_nv.nc")
-# dlcc = xr.open_dataarray(
-#     out_dir + "Natural_Variability/"
-#     "Natural_Variability_Annual_outputs/EndPoints/all_bands/dlcc.nc")
+    "Natural_Variability_Annual_outputs/geographic/02_percent/albedo_nv.nc")
+dlcc = xr.open_dataarray(
+    out_dir + "Natural_Variability/"
+    "Natural_Variability_Annual_outputs/geographic/02_percent/dlcc.nc")
 
 # Calculate the area weights based on the latitude
 weights = np.cos(np.deg2rad(dlst_mean_total.lat))
@@ -186,9 +193,9 @@ det_nv_val = np.ravel(det_nv.values, order="F")
 dalbedo_total_val = np.ravel(dalbedo_total.values, order="F")
 dalbedo_lcc_val = np.ravel(dalbedo_lcc.values, order="F")
 dalbedo_nv_val = np.ravel(dalbedo_nv.values, order="F")
-# dlcc_val = dlcc.values.reshape(dlcc.shape[0],
-#                                dlcc.shape[1] * dlcc.shape[2],
-#                                order="F")
+dlcc_val = dlcc.values.reshape(dlcc.shape[0],
+                               dlcc.shape[1] * dlcc.shape[2],
+                               order="F")
 weights_val = np.ravel(weights, order="F")
 
 pix_index = []
@@ -220,8 +227,8 @@ final_dalbedo_total = []
 final_dalbedo_lcc = []
 final_dalbedo_nv = []
 final_area = []
-final_percent_2003 = []
-final_percent_2013 = []
+# final_percent_2003 = []
+# final_percent_2013 = []
 final_dlcc = []
 Err = []
 final_weights = []
@@ -249,16 +256,21 @@ for i in range(len(shapes)):
         print("ZeroDivisionError")
         Err.append(i)
         continue
-    count_2003=[]
-    count_2013=[]
-    for j in np.arange(1,11):
-        count_2003_tmp = (luc2003_masked==j).sum()
-        count_2003.append(count_2003_tmp)
-        count_2013_tmp = (luc2013_masked==j).sum()
-        count_2013.append(count_2013_tmp)
-    percent_2003 = count_2003/(np.sum(count_2003))
-    percent_2013 = count_2013/(np.sum(count_2013))
-    dlcc_val = percent_2013 - percent_2003 
+    # count_2003 = []
+    # count_2013 = []
+    # for j in np.arange(1, 11):
+    #     count_2003_tmp = (luc2003_masked == j).sum()
+    #     count_2003.append(count_2003_tmp)
+    #     count_2013_tmp = (luc2013_masked == j).sum()
+    #     count_2013.append(count_2013_tmp)
+    # for k in range(len(count_2013)):
+    #     if (count_2003[k] == 0) & (count_2013[k] == 0):
+    #         count_2003[k] = np.nan
+    #         count_2013[k] = np.nan
+
+    # percent_2003 = count_2003 / (np.nansum(count_2003))
+    # percent_2013 = count_2013 / (np.nansum(count_2013))
+    # dlcc_val = percent_2013 - percent_2003
     # conf_tmp2 = np.ravel(conf_tmp, order="C")
     # conf_normal_tmp2 = np.ravel(conf_normal_tmp, order="C")
     final_confusion.append(conf_tmp)
@@ -291,9 +303,9 @@ for i in range(len(shapes)):
     final_dalbedo_lcc.append(dalbedo_lcc_val[i])
     final_dalbedo_nv.append(dalbedo_nv_val[i])
     final_area.append(area[i])
-    final_percent_2003.append(percent_2003)
-    final_percent_2013.append(percent_2013)
-    final_dlcc.append(dlcc_val)
+    # final_percent_2003.append(percent_2003)
+    # final_percent_2013.append(percent_2013)
+    final_dlcc.append(dlcc_val[:, i])
     final_weights.append(weights_val[i])
 
 pix_index = np.array(pix_index)
@@ -325,54 +337,58 @@ final_dalbedo_total = np.array(final_dalbedo_total)
 final_dalbedo_lcc = np.array(final_dalbedo_lcc)
 final_dalbedo_nv = np.array(final_dalbedo_nv)
 final_area = np.array(final_area)
-final_percent_2003 = np.array(final_percent_2003)
-final_percent_2013 = np.array(final_percent_2013)
+# final_percent_2003 = np.array(final_percent_2003)
+# final_percent_2013 = np.array(final_percent_2013)
 final_dlcc = np.array(final_dlcc)
 final_weights = np.array(final_weights)
 
-ds = xr.Dataset(data_vars={
-    "CONFUSION": (("ID", "LC_t1", "LC_t2"), final_confusion),
-    "NORMALIZED_CONFUSION": (("ID", "LC_t1", "LC_t2"), final_normal_confusion),
-    "DLCC": (("ID", "LC"), final_dlcc),
-    "LC_2003":(("ID", "LC"), final_percent_2003),
-    "LC_2013":(("ID", "LC"), final_percent_2013),
-    "PIX_INDEX": (("ID"), pix_index),
-    "LST_MEAN_2003": (("ID"), final_lst_mean_2003),
-    "LST_MEAN_2013": (("ID"), final_lst_mean_2013),
-    "LST_DAY_2003": (("ID"), final_lst_day_2003),
-    "LST_DAY_2013": (("ID"), final_lst_day_2013),
-    "LST_NIGHT_2003": (("ID"), final_lst_night_2003),
-    "LST_NIGHT_2013": (("ID"), final_lst_night_2013),
-    "ET_2003": (("ID"), final_et_2003),
-    "ET_2013": (("ID"), final_et_2013),
-    "ALBEDO_2003": (("ID"), final_albedo_2003),
-    "ALBEDO_2013": (("ID"), final_albedo_2013),
-    "DLST_MEAN_TOTAL": (("ID"), final_dlst_mean_total),
-    "DLST_MEAN_LCC": (("ID"), final_dlst_mean_lcc),
-    "DLST_MEAN_NV": (("ID"), final_dlst_mean_nv),
-    "DLST_DAY_TOTAL": (("ID"), final_dlst_day_total),
-    "DLST_DAY_LCC": (("ID"), final_dlst_day_lcc),
-    "DLST_DAY_NV": (("ID"), final_dlst_day_nv),
-    "DLST_NIGHT_TOTAL": (("ID"), final_dlst_night_total),
-    "DLST_NIGHT_LCC": (("ID"), final_dlst_night_lcc),
-    "DLST_NIGHT_NV": (("ID"), final_dlst_night_nv),
-    "DET_TOTAL": (("ID"), final_det_total),
-    "DET_LCC": (("ID"), final_det_lcc),
-    "DET_NV": (("ID"), final_det_nv),
-    "DALBEDO_TOTAL": (("ID"), final_dalbedo_total),
-    "DALBEDO_LCC": (("ID"), final_dalbedo_lcc),
-    "DALBEDO_NV": (("ID"), final_dalbedo_nv),
-    "Area": (("ID"), final_area),
-    "WEIGHTS": (("ID"), final_weights)
-},
-                coords={
-                    "ID": range(len(final_dlst_mean_total)),
-                    "LC_t1": range(1, 11),
-                    "LC_t2": range(1, 11),
-                    "LC": range(1, 11)
-                })
+ds = xr.Dataset(
+    data_vars={
+        "CONFUSION": (("ID", "LC_t1", "LC_t2"), final_confusion),
+        "NORMALIZED_CONFUSION":
+        (("ID", "LC_t1", "LC_t2"), final_normal_confusion),
+        "DLCC": (("ID", "LC"), final_dlcc),
+        # "LC_2003": (("ID", "LC"), final_percent_2003),
+        # "LC_2013": (("ID", "LC"), final_percent_2013),
+        "PIX_INDEX": (("ID"), pix_index),
+        "LST_MEAN_2003": (("ID"), final_lst_mean_2003),
+        "LST_MEAN_2013": (("ID"), final_lst_mean_2013),
+        "LST_DAY_2003": (("ID"), final_lst_day_2003),
+        "LST_DAY_2013": (("ID"), final_lst_day_2013),
+        "LST_NIGHT_2003": (("ID"), final_lst_night_2003),
+        "LST_NIGHT_2013": (("ID"), final_lst_night_2013),
+        "ET_2003": (("ID"), final_et_2003),
+        "ET_2013": (("ID"), final_et_2013),
+        "ALBEDO_2003": (("ID"), final_albedo_2003),
+        "ALBEDO_2013": (("ID"), final_albedo_2013),
+        "DLST_MEAN_TOTAL": (("ID"), final_dlst_mean_total),
+        "DLST_MEAN_LCC": (("ID"), final_dlst_mean_lcc),
+        "DLST_MEAN_NV": (("ID"), final_dlst_mean_nv),
+        "DLST_DAY_TOTAL": (("ID"), final_dlst_day_total),
+        "DLST_DAY_LCC": (("ID"), final_dlst_day_lcc),
+        "DLST_DAY_NV": (("ID"), final_dlst_day_nv),
+        "DLST_NIGHT_TOTAL": (("ID"), final_dlst_night_total),
+        "DLST_NIGHT_LCC": (("ID"), final_dlst_night_lcc),
+        "DLST_NIGHT_NV": (("ID"), final_dlst_night_nv),
+        "DET_TOTAL": (("ID"), final_det_total),
+        "DET_LCC": (("ID"), final_det_lcc),
+        "DET_NV": (("ID"), final_det_nv),
+        "DALBEDO_TOTAL": (("ID"), final_dalbedo_total),
+        "DALBEDO_LCC": (("ID"), final_dalbedo_lcc),
+        "DALBEDO_NV": (("ID"), final_dalbedo_nv),
+        "Area": (("ID"), final_area),
+        "WEIGHTS": (("ID"), final_weights)
+    },
+    coords={
+        "ID": range(len(final_dlst_mean_total)),
+        "LC_t1": range(1, 11),
+        "LC_t2": range(1, 11),
+        "LC": range(1, 11)
+    })
 
-ds.to_netcdf(out_dir +
-             "Sensitivity/EndPoints/Annual/all_bands/Confusion_Table_final_LC_Added.nc")
+ds.to_netcdf(
+    out_dir +
+    "Sensitivity/EndPoints/Annual/Geographic/02_percent/Confusion_Table_final_02precent.nc"
+)
 
 print("All done!")

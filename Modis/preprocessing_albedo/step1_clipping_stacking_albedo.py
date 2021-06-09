@@ -17,9 +17,14 @@ t1 = time()
 #                          Begin preparation
 # ---------------------------------------------------------------------------
 
-tif_dir = "/data/ABOVE/MODIS/blue_sky_albedo/orders/df99d6e7e26fb666143dbf2de2de4707/Albedo_Boreal_North_America/data_geographic/"
-out_dir = "/data/ABOVE/MODIS/blue_sky_albedo/orders/df99d6e7e26fb666143dbf2de2de4707/Albedo_Boreal_North_America/"
-shp_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/Study_area/"
+tif_dir = (
+    "/data/ABOVE/MODIS/blue_sky_albedo/orders/"
+    "df99d6e7e26fb666143dbf2de2de4707/Albedo_Boreal_North_America/data_geographic/"
+)
+out_dir = ("/data/ABOVE/MODIS/blue_sky_albedo/orders/"
+           "df99d6e7e26fb666143dbf2de2de4707/Albedo_Boreal_North_America/")
+shp_dir = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
+           "Study_area/")
 # tif_dir = 'F:\\MYD21A2\\tmp\\'
 # out_dir = 'F:\\MYD21A2\\'
 # shp_dir = 'F:\\MYD21A2\\Study_area\\'
@@ -37,13 +42,8 @@ filenames_albedo = []
 for t in date:
     year = t.year
     doy = t.dayofyear
-    fname = (
-        "bluesky_albedo_"
-        + str(year)
-        + "_"
-        + str(doy).zfill(3)
-        + "_albedo_Geographic.tif"
-    )
+    fname = ("bluesky_albedo_" + str(year) + "_" + str(doy).zfill(3) +
+             "_albedo_Geographic.tif")
     filenames_albedo.append(fname)
 filenames_albedo
 
@@ -51,13 +51,8 @@ filenames_qc = []
 for t in date:
     year = t.year
     doy = t.dayofyear
-    fname = (
-        "bluesky_albedo_"
-        + str(year)
-        + "_"
-        + str(doy).zfill(3)
-        + "_quality_Geographic.tif"
-    )
+    fname = ("bluesky_albedo_" + str(year) + "_" + str(doy).zfill(3) +
+             "_quality_Geographic.tif")
     filenames_qc.append(fname)
 filenames_qc
 
@@ -119,10 +114,10 @@ for tileID in np.arange(1, len(geodf) + 1):
     date_xr = xr.Variable("time", date)
     a = xr.open_rasterio(tmp_dir + "/" + filenames_albedo[0])
     chunks = {"x": int(a.sizes["x"]), "y": int(a.sizes["x"]), "band": 1}
-    da_albedo_init = xr.open_rasterio(
-        tmp_dir + "/" + filenames_albedo[0], chunks=chunks
-    )
-    da_qc_init = xr.open_rasterio(tmp_dir + "/" + filenames_qc[0], chunks=chunks)
+    da_albedo_init = xr.open_rasterio(tmp_dir + "/" + filenames_albedo[0],
+                                      chunks=chunks)
+    da_qc_init = xr.open_rasterio(tmp_dir + "/" + filenames_qc[0],
+                                  chunks=chunks)
 
     if 5 <= date[0].month <= 9:
         # Summer months
@@ -143,9 +138,8 @@ for tileID in np.arange(1, len(geodf) + 1):
         else:
             # Winter month
             da_tmp = da_tmp.where(da_qa_tmp.isin(winter_flag))
-        da_tmp = da_tmp.rio.reproject_match(
-            da_albedo_init, resampling=Resampling.nearest
-        )
+        da_tmp = da_tmp.rio.reproject_match(da_albedo_init,
+                                            resampling=Resampling.nearest)
         ds_tmp = da_tmp.to_dataset(name="Albedo")
         ds_tmp = ds_tmp.assign_coords({"time": date_xr[i]})
         if i == 1:
@@ -166,4 +160,3 @@ print("--------------------------------------------")
 print("              End of the script             ")
 print("--------------------------------------------")
 print(f"Total time:{(t2-t1)/3600}hours")
-

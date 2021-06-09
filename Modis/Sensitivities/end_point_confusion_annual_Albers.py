@@ -240,7 +240,7 @@ imap = {key: i for i, key in enumerate(unique)}
 # for i in range(len(shapes)):
 
 for i in range(len(shapes)):
-    # for i in range(10572838,10572840):
+# for i in range(10570000,10570500):
 
     print(i)
     if changed_pixels_mask_val[i] == 0:
@@ -373,7 +373,7 @@ ds = xr.Dataset(
         "DALBEDO_TOTAL": (("ID"), final_dalbedo_total),
         "DALBEDO_LCC": (("ID"), final_dalbedo_lcc),
         "DALBEDO_NV": (("ID"), final_dalbedo_nv),
-        "Area": (("ID"), final_area),
+        # "Area": (("ID"), final_area),
         # "WEIGHTS": (("ID"), final_weights)
     },
     coords={

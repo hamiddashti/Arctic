@@ -1,0 +1,100 @@
+# This script calculate the confusion table and associated LST, ET and albedo
+# and save it in a netcdf file
+
+import numpy as np
+from numpy.core.fromnumeric import squeeze
+import rasterio
+import fiona
+import pandas as pd
+import xarray as xr
+from rasterio import features
+from rasterio.mask import mask
+
+
+def mymask(tif, shp):
+    # To mask landsat LUC pixels included in each MODIS pixel
+    out_image, out_transform = rasterio.mask.mask(tif,
+                                                  shp,
+                                                  all_touched=False,
+                                                  crop=True)
+    # out_meta = tif.meta
+    # return out_image,out_meta,out_transform
+    return out_image, out_transform
+
+
+def confusionmatrix(actual, predicted, unique, imap):
+    """
+    Generate a confusion matrix for multiple classification
+    @params:
+        actual      - a list of integers or strings for known classes
+        predicted   - a list of integers or strings for predicted classes
+        # normalize   - optional boolean for matrix normalization
+        unique		- is the unique numbers assigned to each class
+        imap		- mapping of classes 
+
+    @return:
+        matrix      - a 2-dimensional list of pairwise counts
+    """
+
+    matrix = [[0 for _ in unique] for _ in unique]
+    # Generate Confusion Matrix
+    for p, a in list(zip(actual, predicted)):
+        if ((p > len(unique)) or (a > len(unique))):
+            continue
+        matrix[imap[p]][imap[a]] += 1
+    # Matrix Normalization
+    # if normalize:
+    sigma = sum([sum(matrix[imap[i]]) for i in unique])
+    matrix_normalized = [
+        row for row in map(lambda i: list(map(lambda j: j / sigma, i)), matrix)
+    ]
+    return matrix, matrix_normalized
+
+
+in_dir = "/data/ABOVE/Final_data/"
+out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
+           "Geographics/Figures_MS1/")
+# chunks = {"x": 10000, "y": 10000}
+# luc2003 = xr.open_rasterio(in_dir + 'LUC/LUC_10/mosaic_reproject_2003.tif',
+#                            chunks=chunks)
+# luc2013 = xr.open_rasterio(in_dir + 'LUC/LUC_10/mosaic_reproject_2013.tif',
+#                            chunks=chunks)
+NUMBER_OF_CLASSES = 10  #[DF,DF,shrub,herb,sparse,wetland, water]
+class_names = [
+    "EF", "DF", "Shrub", "Herb", "Sparse", "Barren", "Fen", "Bog",
+    "Shallow/Litter", "water"
+]
+unique = np.arange(1, NUMBER_OF_CLASSES + 1)
+imap = {key: i for i, key in enumerate(unique)}
+
+luc2003 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2003.tif')
+luc2013 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2013.tif')
+
+shape_file = in_dir + "shp_files/CoreDomain_geographic.shp"
+with fiona.open(shape_file, "r") as shapefile:
+    shapes = [feature["geometry"] for feature in shapefile]
+luc2003_masked = mymask(tif=luc2003, shp=[shapes[0]])[0]
+luc2013_masked = mymask(tif=luc2013, shp=[shapes[0]])[0]
+conf_tmp, conf_normal_tmp = np.asarray(
+    confusionmatrix(luc2003_masked.ravel(), luc2013_masked.ravel(), unique,
+                    imap))
+
+from sklearn.metrics import confusion_matrix
+
+conf_tmp = confusion_matrix(luc2003_masked.ravel(),
+                            luc2013_masked.ravel(),
+                            labels=unique)
+
+df_not_normalized = pd.DataFrame(data=conf_tmp,
+                                 index=class_names,
+                                 columns=class_names)
+df_not_normalized.to_csv(out_dir + "confusion_table_not_normalized.csv")
+
+conf_tmp_normalized = confusion_matrix(luc2003_masked.ravel(),
+                                       luc2013_masked.ravel(),
+                                       labels=unique,
+                                       normalize="true")
+df_normalized = pd.DataFrame(data=conf_tmp_normalized,
+                             index=class_names,
+                             columns=class_names)
+df_normalized.to_csv(out_dir + "confusion_table_normalized.csv")

@@ -16,8 +16,7 @@ if __name__ == "__main__":
     # out_dir = "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
     input_dir = "/data/ABOVE/Final_data/"
     output_dir = (
-        "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses"
-        "/outputs/")
+        "/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/""Natural_Variability_Annual_outputs/geographic")
 
     nband = 7  # number of LUC classes in the analysis
     win_size = 51  # The size of the search window (e.g. 51*51 pixels or searching within 51 km)

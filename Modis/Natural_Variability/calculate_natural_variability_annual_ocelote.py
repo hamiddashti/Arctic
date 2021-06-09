@@ -203,27 +203,17 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
     return [ddata_nv, ddata_lcc, ddata_changed, ddata_not_changed]
 
 
-in_dir = "/data/ABOVE/Final_data/"
-out_dir = ("/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/"
-           "Natural_Variability_Annual_outputs/geographic/02_percent/")
+in_dir = "/xdisk/davidjpmoore/hamiddashti/data/final_data_geographic/annual/"
+out_dir = (
+    "/xdisk/davidjpmoore/hamiddashti/nasa_above_outputs/"
+    "Natural_Variability/Natural_Variability_Annual_geographic/geographic/")
 
-luc = xr.open_dataarray(in_dir + "LUC/LUC_10/LULC_10_2003_2014.nc")
-lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
-lst_day = xr.open_dataarray(in_dir +
-                            "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
-lst_night = xr.open_dataarray(in_dir +
-                              "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
-albedo = xr.open_dataarray(in_dir +
-                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
-et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
-
-# luc = luc.isel(y=range(1400, 1600), x=range(4400, 4600))
-# lst_mean = lst_mean.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_day = lst_day.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_night = lst_night.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# albedo = albedo.isel(y=range(1400, 1600), x=range(4400, 4600))
-# et = et.isel(y=range(1400, 1600), x=range(4400, 4600))
+luc = xr.open_dataarray(in_dir + "LULC_10_2003_2014.nc")
+lst_mean = xr.open_dataarray(in_dir + "lst_mean_annual.nc")
+lst_day = xr.open_dataarray(in_dir + "lst_day_annual.nc")
+lst_night = xr.open_dataarray(in_dir + "lst_night_annual.nc")
+albedo = xr.open_dataarray(in_dir + "Albedo_annual.nc")
+et = xr.open_dataarray(in_dir + "ET_Annual.nc")
 
 # Calculating the natural variability for LST, Albedo and ET
 years = [2003, 2013]
@@ -231,9 +221,7 @@ win_size = 51
 dist_m = dist_matrix(win_size, win_size)
 thresh = 0.02
 nband = 10
-
-print("Detecting changed pixels")
-# Detecting changed pixels
+# Detecting the changed pixels
 changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
                                                      years=years,
                                                      thresh=thresh)
@@ -245,7 +233,7 @@ dlcc_abs.to_netcdf(out_dir + "dlcc_abs.nc")
 var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
 datasets = [lst_mean, lst_day, lst_night, albedo, et]
 
-for i in range(len(var_names)):
+for i in range(1, len(var_names)):
     var_name = var_names[i]
     print(var_name)
     data = datasets[i]

@@ -10,7 +10,9 @@ out_dir = "/data/ABOVE/ABoVE_Final_Data/LST/processed/"
 
 chunks = ({'time': 10, 'ydim': 2471, 'xdim': 3592})
 
-LST = xr.open_dataset(in_dir + "MYD21A2.006_1km_aid0001.nc", chunks=chunks,decode_cf=True)
+LST = xr.open_dataset(in_dir + "MYD21A2.006_1km_aid0001.nc",
+                      chunks=chunks,
+                      decode_cf=True)
 
 # lst_day_ds = xr.open_dataset(in_dir + 'MYD_LST_Day.nc', chunks=chunks)
 lst_day = LST['LST_Day_1KM']
