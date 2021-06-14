@@ -52,10 +52,11 @@ out_dir = ("/data/home/hamiddashti/nasa_above/outputs/albedo_processed/")
 shp_dir = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
            "Study_area/")
 """
+'''
 Step one filter original albedo data based on quality flags and clip 
 to the above extent
 
-"""
+''''
 
 geodf = gpd.read_file(shp_dir + "Above_180km_clip.shp")
 summer_flag = [0, 1, 2, 4, 5, 6, 16, 17, 18, 20, 21, 22]
@@ -126,7 +127,7 @@ for tileID in np.arange(1, len(geodf) + 1):
     results = dask.compute(lazy_results)
 
 
-# ---------- Step 3: resample the cliped file into annual and seasonal---------
+# ---------- Step 3: Concatenate daily files cliped in the last step---------
 def concat_tiles(tileID):
     # for tileID in np.arange(1, 176):
     print("tileID:" + str(tileID))
@@ -143,25 +144,19 @@ def concat_tiles(tileID):
     da = da.sortby("time").squeeze()
     da.to_netcdf(out_dir + "step3_resampling_tiles/daily_concated_tile_" +
                  str(tileID) + ".nc")
-    # da_annual = da.groupby('time.year').mean(dim='time').squeeze()
-    # da_annual.rio.to_raster(out_dir + "annual_tiles/" + str(year) +
-    #                         "/annual_albedo_tile_" + str(tileID) + ".tif")
-    # da_seasonal = modis_functions.weighted_season_resmaple(da)
-    # da_seasonal.rio.to_raster(out_dir + "seasonal_tiles/" + str(year) +
-    #                           "/seasonal_albedo_tile_" + str(tileID) + ".tif")
-
 
 lazy_results = []
 for tileID in np.arange(1, 176):
     mycal = dask.delayed(concat_tiles)(tileID)
     lazy_results.append(mycal)
 results = dask.compute(lazy_results)
+"""
 
 
 # ----------------------- Step 4 temporal resampled ----------------------------------
 def resample(tileID):
     print("tileID:" + str(tileID))
-    fname = out_dir + "step3_annual_tiles/da_concat_" + str(tileID) + ".nc"
+    fname = out_dir + "step3_daily_tiles/da_concat_" + str(tileID) + ".nc"
     da = xr.open_dataarray(fname)
     da_annual = da.groupby('time.year').mean(dim='time')
     da_annual.rio.to_raster(out_dir +
@@ -262,7 +257,7 @@ ds_domain = ds.rio.clip(domain.geometry)
 ds_reproj = ds_domain.rio.reproject_match(
     lst_ref, resampling=Resampling.bilinear) * 0.001
 ds_reproj.to_netcdf(
-    out_dir + "step5_mosaic_reproject/seasonal/resampled/annual_albedo.nc")
+    out_dir + "step5_mosaic_reproject/annual/resampled/annual_albedo.nc")
 
 # ---------- Resample and reproject seasonal data
 # ------ mosaic resample annual data
@@ -292,8 +287,8 @@ ds = ds.rename({"band": "time"}).assign_coords({"time": da_seasonal.time})
 ds_domain = ds.rio.clip(domain.geometry)
 ds_reproj = ds_domain.rio.reproject_match(
     lst_ref, resampling=Resampling.bilinear) * 0.001
-ds_reproj.to_netcdf(out_dir +
-                    "step5_mosaic_reproject/sesonal/resampled/seasonal_albedo.nc")
+ds_reproj.to_netcdf(
+    out_dir + "step5_mosaic_reproject/seasonal/resampled/seasonal_albedo.nc")
 
 # ---------- Resample and reproject monthly data
 # ------ mosaic resample annual data
@@ -323,7 +318,7 @@ ds = ds.rename({"band": "time"}).assign_coords({"time": da_monthly.time})
 ds_domain = ds.rio.clip(domain.geometry)
 ds_reproj = ds_domain.rio.reproject_match(
     lst_ref, resampling=Resampling.bilinear) * 0.001
-ds_reproj.to_netcdf(out_dir +
-                    "step5_mosaic_reproject/monthly/resampled/monthly_albedo.nc")
+ds_reproj.to_netcdf(
+    out_dir + "step5_mosaic_reproject/monthly/resampled/monthly_albedo.nc")
 
-print("Albedo processing done!") 
+print("Albedo processing done!")

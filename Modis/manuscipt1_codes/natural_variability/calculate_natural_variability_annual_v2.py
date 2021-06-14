@@ -214,9 +214,8 @@ lst_day = xr.open_dataarray(in_dir +
                             "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
 lst_night = xr.open_dataarray(in_dir +
                               "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
-albedo = xr.open_dataarray(
-    "/data/home/hamiddashti/nasa_above/outputs/"
-    "albedo_processed/step4_resampling/annual/resampled/annual_albedo.nc")
+albedo = xr.open_dataarray(in_dir +
+                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
 et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
 
 # luc = luc.isel(y=range(1400, 1600), x=range(4400, 4600))
@@ -235,17 +234,17 @@ nband = 10
 
 print("Detecting changed pixels")
 # Detecting changed pixels
-# changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
-#                                                      years=years,
-#                                                      thresh=thresh)
+changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
+                                                     years=years,
+                                                     thresh=thresh)
 
-changed_pixels = xr.open_dataarray(out_dir + "changed_pixels.nc")
-dlcc = xr.open_dataarray(out_dir + "dlcc.nc")
-dlcc_abs = xr.open_dataarray(out_dir + "dlcc_abs.nc")
+changed_pixels.to_netcdf(out_dir + "changed_pixels.nc")
+dlcc.to_netcdf(out_dir + "dlcc.nc")
+dlcc_abs.to_netcdf(out_dir + "dlcc_abs.nc")
 
 var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
 datasets = [lst_mean, lst_day, lst_night, albedo, et]
-i = 3
+
 for i in range(len(var_names)):
     var_name = var_names[i]
     print(var_name)
@@ -264,5 +263,3 @@ for i in range(len(var_names)):
     lcc.to_netcdf(out_dir + var_name + "_lcc.nc")
     var_changed.to_netcdf(out_dir + var_name + "_changed.nc")
     var_not_changed.to_netcdf(out_dir + var_name + "_not_changed.nc")
-
-

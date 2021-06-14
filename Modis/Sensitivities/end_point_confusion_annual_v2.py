@@ -86,8 +86,11 @@ et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
 et = et.rename({"x": "lon", "y": "lat"})
 et = et.where(lst_mean.loc[2003:2015].notnull())
 
-albedo = xr.open_dataarray(in_dir +
-                                "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+# albedo = xr.open_dataarray(in_dir +
+#                            "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+albedo = xr.open_dataarray(
+    "/data/home/hamiddashti/nasa_above/outputs/"
+    "albedo_processed/step4_resampling/annual/resampled/annual_albedo.nc")
 lst_mean_2003 = lst_mean.loc[2003]
 lst_mean_2013 = lst_mean.loc[2013]
 lst_day_2003 = lst_day.loc[2003]
@@ -148,6 +151,7 @@ dalbedo_total = xr.open_dataarray(
 dalbedo_lcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
     "Natural_Variability_Annual_outputs/geographic/02_percent/albedo_lcc.nc")
+
 dalbedo_nv = xr.open_dataarray(
     out_dir + "Natural_Variability/"
     "Natural_Variability_Annual_outputs/geographic/02_percent/albedo_nv.nc")
@@ -388,7 +392,7 @@ ds = xr.Dataset(
 
 ds.to_netcdf(
     out_dir +
-    "Sensitivity/EndPoints/Annual/Geographic/02_percent/Confusion_Table_final_02precent.nc"
+    "Sensitivity/EndPoints/Annual/Geographic/02_percent/Confusion_Table_final_02precent_new_albedo.nc"
 )
 
 print("All done!")

@@ -45,7 +45,7 @@ for t in date:
     fname = ("bluesky_albedo_" + str(year) + "_" + str(doy).zfill(3) +
              "_albedo_Geographic.tif")
     filenames_albedo.append(fname)
-filenames_albedo
+
 
 filenames_qc = []
 for t in date:
@@ -54,7 +54,7 @@ for t in date:
     fname = ("bluesky_albedo_" + str(year) + "_" + str(doy).zfill(3) +
              "_quality_Geographic.tif")
     filenames_qc.append(fname)
-filenames_qc
+
 
 # Read the shapefile
 # Note: if the crs of the shape file is 4326 (Geographic) then we dont need to assign the CRS (commented lines below)

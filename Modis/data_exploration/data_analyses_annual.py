@@ -102,11 +102,11 @@ yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
 
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
-# out_dir = (
-#     "/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/Albers/")
+out_dir = (
+    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
 
-out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-           "Geographics/Figures_MS1/FigS1/")
+# out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
+#            "Geographics/Figures_MS1/FigS1/")
 
 # The map of dLST due to LCC
 dlst_lcc = xr.open_dataarray(
@@ -120,8 +120,9 @@ dlst_total = xr.open_dataarray(
 
 # This is the file with 2 percent change as threshold for calculating natural
 # variability.
-ct = xr.open_dataset(in_dir + ("Sensitivity/EndPoints/Annual/Geographic/"
-                               "Confusion_Table_final_LC_Added_02precent.nc"))
+ct = xr.open_dataset(
+    in_dir + ("Sensitivity/EndPoints/Annual/Geographic/02_percent/"
+              "Confusion_Table_final_02precent_new_albedo.nc"))
 
 # ct = xr.open_dataset(
 #     in_dir +

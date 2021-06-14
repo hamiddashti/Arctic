@@ -126,7 +126,7 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
     code. 
     ------------------------------------------------------------------------"""
     changed_pixels = changed_pixels.values
-    ddata = data.sel(year=years[1]) - data.sel(year=years[0])
+    ddata = data.loc[str(2013)].squeeze() - data.loc[str(2003)].squeeze()
 
     ddata_changed = ddata.where(changed_pixels == True)
     ddata_not_changed = ddata.where(changed_pixels == False)
@@ -198,42 +198,25 @@ def calculate_nv(data, var_name, changed_pixels, years, win_size, dist_m,
             ddata_natural_variability[
                 i, j] = np.nansum(weighted_ddata) / np.nansum(1 / dist_mask)
 
-    ddata_nv = data.sel(year=years[1]).copy(data=ddata_natural_variability)
+    ddata_nv = data.loc[str(2013)].squeeze().copy(
+        data=ddata_natural_variability)
     ddata_lcc = ddata - ddata_nv
     return [ddata_nv, ddata_lcc, ddata_changed, ddata_not_changed]
 
 
+seasons = ["JJA", "DJF", "MAM", "SON"]
 in_dir = "/data/ABOVE/Final_data/"
+
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/"
-           "Natural_Variability_Sesonal_outputs/geographic/02_percent/")
-
+           "Natural_Variability_Seasonal_Outputs/geographic/")
 luc = xr.open_dataarray(in_dir + "LUC/LUC_10/LULC_10_2003_2014.nc")
-lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
-lst_day = xr.open_dataarray(in_dir +
-                            "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
-lst_night = xr.open_dataarray(in_dir +
-                              "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
-albedo = xr.open_dataarray(in_dir +
-                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
-et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
-
-# luc = luc.isel(y=range(1400, 1600), x=range(4400, 4600))
-# lst_mean = lst_mean.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_day = lst_day.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_night = lst_night.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# albedo = albedo.isel(y=range(1400, 1600), x=range(4400, 4600))
-# et = et.isel(y=range(1400, 1600), x=range(4400, 4600))
-
-# Calculating the natural variability for LST, Albedo and ET
+print("Detecting changed pixels")
+# Detecting changed pixels
 years = [2003, 2013]
 win_size = 51
 dist_m = dist_matrix(win_size, win_size)
 thresh = 0.02
 nband = 10
-
-print("Detecting changed pixels")
-# Detecting changed pixels
 changed_pixels, dlcc, dlcc_abs = produce_change_mask(luc=luc,
                                                      years=years,
                                                      thresh=thresh)
@@ -242,24 +225,46 @@ changed_pixels.to_netcdf(out_dir + "changed_pixels.nc")
 dlcc.to_netcdf(out_dir + "dlcc.nc")
 dlcc_abs.to_netcdf(out_dir + "dlcc_abs.nc")
 
-var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
-datasets = [lst_mean, lst_day, lst_night, albedo, et]
+for season in seasons:
+    out_dir1 = out_dir + season + "/"
+    print(out_dir1)
+    lst_mean = xr.open_dataarray(in_dir +
+                                 "LST_Final/LST/Seasonal_Mean/LST_Mean_" +
+                                 season + ".nc")
+    lst_day = xr.open_dataarray(in_dir +
+                                "LST_Final/LST/Seasonal_Mean/LST_Day_" +
+                                season + ".nc")
+    lst_night = xr.open_dataarray(in_dir +
+                                  "LST_Final/LST/Seasonal_Mean/LST_Night_" +
+                                  season + ".nc")
+    # albedo = xr.open_dataarray(in_dir +
+    #                            "ALBEDO_Final/Seasonal_Albedo/geographic/" +
+    #                            season + "/albedo_" + season + ".n")
+    # et = xr.open_dataarray(in_dir +
+    #                        "ET_Final/Seasonal_ET/geographic/ET_Mean_" +
+    #                        season + ".nc")
 
-for i in range(len(var_names)):
-    var_name = var_names[i]
-    print(var_name)
-    data = datasets[i]
-    [nv, lcc, var_changed,
-     var_not_changed] = calculate_nv(data=data,
-                                     var_name=var_name,
-                                     changed_pixels=changed_pixels,
-                                     years=years,
-                                     win_size=win_size,
-                                     dist_m=dist_m,
-                                     nband=nband,
-                                     out_dir=out_dir)
+    # Calculating the natural variability for LST, Albedo and ET
+    # var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
+    var_names = ["dlst_mean", "dlst_day", "dlst_night"]
+    # datasets = [lst_mean, lst_day, lst_night, albedo, et]
+    datasets = [lst_mean, lst_day, lst_night]
 
-    nv.to_netcdf(out_dir + var_name + "_nv.nc")
-    lcc.to_netcdf(out_dir + var_name + "_lcc.nc")
-    var_changed.to_netcdf(out_dir + var_name + "_changed.nc")
-    var_not_changed.to_netcdf(out_dir + var_name + "_not_changed.nc")
+    for i in range(len(var_names)):
+        var_name = var_names[i]
+        print(season + " ---> " + var_name)
+        data = datasets[i]
+        [nv, lcc, var_changed,
+         var_not_changed] = calculate_nv(data=data,
+                                         var_name=var_name,
+                                         changed_pixels=changed_pixels,
+                                         years=years,
+                                         win_size=win_size,
+                                         dist_m=dist_m,
+                                         nband=nband,
+                                         out_dir=out_dir)
+
+        nv.to_netcdf(out_dir1 + var_name + "_nv.nc")
+        lcc.to_netcdf(out_dir1 + var_name + "_lcc.nc")
+        var_changed.to_netcdf(out_dir1 + var_name + "_changed.nc")
+        var_not_changed.to_netcdf(out_dir1 + var_name + "_not_changed.nc")
