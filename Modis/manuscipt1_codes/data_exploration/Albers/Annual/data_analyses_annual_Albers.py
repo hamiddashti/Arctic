@@ -169,16 +169,9 @@ for i in range(len(lc_names)):
     df = df.dropna()
     #----------------------------------------------
     # Bin data based on dLCC
-    dlcc_bins = np.linspace(-1.01, 1, 202)
+    dlcc_bins = np.linspace(-1.001, 1, 2002)
     out = fit_bins_ols(df=df, bins=dlcc_bins, var="dlst")
-
-    axs[axs_counter].plot(out[0],
-                        out[6],
-                        color='black',
-                        linestyle="--",
-                        linewidth=3,
-                        label='Mean model')
-
+    counts = out[8]
     #-------------------------------------
     # The equation for the mean model (i.e. gain/loss)
     if out[4] > 0:
@@ -189,6 +182,11 @@ for i in range(len(lc_names)):
                    f"{out[4]}(\u00B1" + f"{out[5]})" + "X")
 
     # Scatter plot of the gain/loss
+    sns.scatterplot(x=out[0],
+                    y=out[1],
+                    hue=counts,
+                    ax=axs[axs_counter],
+                    legend=False)
     # axs[axs_counter].scatter(x=out[0], y=out[1], color="gray")
     axs[axs_counter].plot(out[0],
                           out[6],
@@ -330,7 +328,7 @@ fig.supxlabel('Fractional change in land cover', fontsize=16, **pltfont)
 fig.supylabel("$\Delta LST_{LCC}$ [k]", fontsize=16, **pltfont)
 plt.tight_layout()
 # This is figure (XXXX) in the manuscript
-save(out_dir + "Annual_gain_loss_LST_Albers.png")
+save(out_dir + "Figures/Annual_gain_loss_LST_Albers_10percent.png")
 
 # ----------------------------------------------------------
 plt.close()
@@ -355,7 +353,7 @@ for i in range(len(lc_names)):
     df = df.dropna()
 
     # Bin data based on dLCC
-    dlcc_bins = np.linspace(-1.001, 1, 2002)
+    dlcc_bins = np.linspace(-1.01, 1, 202)
     out = fit_bins_ols(df=df, bins=dlcc_bins, var="det")
     # The equation for the mean model (i.e. gain/loss)
     if out[5] > 0:
@@ -401,7 +399,7 @@ for i in range(len(lc_names)):
             "dlcc": -transintion_loss
         })
         df_loss = df_loss.dropna()
-        bins_loss = np.linspace(-1, 0, 1001)
+        bins_loss = np.linspace(-1, 0, 101)
         df_loss["bins"] = pd.cut(df_loss["dlcc"],
                                  bins=bins_loss,
                                  include_lowest=True)
@@ -416,7 +414,7 @@ for i in range(len(lc_names)):
             "dlcc": transintion_gain,
         })
         df_gain = df_gain.dropna()
-        bins_gain = np.linspace(0, 1, 1001)
+        bins_gain = np.linspace(0, 1, 101)
         out_gain = fit_bins_ols(df=df_gain, bins=bins_gain, var="det")
 
         # Concatenate the loss and gain transitions and fit a linear model
@@ -515,7 +513,7 @@ fig.supylabel("$\Delta ET$", fontsize=16, **pltfont)
 plt.tight_layout()
 
 # This is figure (XXXX) in the manuscript
-save(out_dir + "Annual_gain_loss_ET_Albers.png")
+save(out_dir + "Figures/Annual_gain_loss_ET_Albers_1percent.png")
 
 # --------------------------------------------------------------------------
 
@@ -541,7 +539,7 @@ for i in range(len(lc_names)):
     df = df.dropna()
 
     # Bin data based on dLCC
-    dlcc_bins = np.linspace(-1.001, 1, 2002)
+    dlcc_bins = np.linspace(-1.01, 1, 202)
     out = fit_bins_ols(df=df, bins=dlcc_bins, var="dalbedo")
     # The equation for the mean model (i.e. gain/loss)
     if out[5] > 0:
@@ -586,7 +584,7 @@ for i in range(len(lc_names)):
             "dlcc": -transintion_loss
         })
         df_loss = df_loss.dropna()
-        bins_loss = np.linspace(-1, 0, 1001)
+        bins_loss = np.linspace(-1, 0, 101)
         df_loss["bins"] = pd.cut(df_loss["dlcc"],
                                  bins=bins_loss,
                                  include_lowest=True)
@@ -601,7 +599,7 @@ for i in range(len(lc_names)):
             "dlcc": transintion_gain,
         })
         df_gain = df_gain.dropna()
-        bins_gain = np.linspace(0, 1, 1001)
+        bins_gain = np.linspace(0, 1, 101)
         out_gain = fit_bins_ols(df=df_gain, bins=bins_gain, var="dalbedo")
 
         # Concatenate the loss and gain transitions and fit a linear model
@@ -697,5 +695,4 @@ fig.supxlabel('Fractional change in land cover', fontsize=16, **pltfont)
 fig.supylabel("$\Delta Albedo$", fontsize=16, **pltfont)
 plt.tight_layout()
 
-# This is figure (XXXX) in the manuscript
-save(out_dir + "Annual_gain_loss_Albedo_Albers.png")
+save(out_dir + "Figures/Annual_gain_loss_Albedo_Albers_1percent.png")

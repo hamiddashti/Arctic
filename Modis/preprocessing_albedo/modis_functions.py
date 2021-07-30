@@ -140,12 +140,9 @@ def reject_outliers(data, m):
 
 
 def growing_season(da):
-    # Taking the mean of the LST data from April to October. Selection of the month is just beacuse
-    # initital investigation of the Landsat NDVI data showed the satrt and end of the season.
-
     da_grouped = da.where(da.time.dt.month.isin(
-        [4, 5, 6, 7, 8, 9,
-         10]))  # This line set other months than numbered to nan
+        [3, 4, 5, 6, 7, 8, 9, 10,
+         11]))  # This line set other months than numbered to nan
     da_growing = da_grouped.groupby("time.year").mean()
     return da_growing
 

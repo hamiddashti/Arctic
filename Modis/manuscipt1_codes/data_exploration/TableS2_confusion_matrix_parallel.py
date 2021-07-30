@@ -11,8 +11,8 @@ from rasterio import features
 from rasterio.mask import mask
 from sklearn.metrics import confusion_matrix
 import dask.array as da
-# from dask.distributed import Client, LocalCluster
-# client = Client()
+from dask.distributed import Client, LocalCluster
+client = Client(processes=False)
 
 
 def mymask(tif, shp):
@@ -57,7 +57,7 @@ def confusionmatrix(actual, predicted, unique, imap):
 
 in_dir = "/data/ABOVE/LANDSAT/LANDCOVER/Annual_Landcover_ABoVE_1691/data/mosaic/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-           "Geographics/Figures_MS1/")
+           "Albers/Figures_MS1/")
 chunks = {"x": 10000, "y": 10000}
 # luc2003 = xr.open_rasterio(in_dir + 'LUC/LUC_10/mosaic_reproject_2003.tif',
 #                            chunks=chunks)
@@ -71,11 +71,11 @@ class_names = [
 unique = np.arange(1, NUMBER_OF_CLASSES + 1)
 imap = {key: i for i, key in enumerate(unique)}
 
-shape_file = "/data/ABOVE/Final_data/shp_files/CoreDomain.shp"
-with fiona.open(shape_file, "r") as shapefile:
-    shapes = [feature["geometry"] for feature in shapefile]
+# shape_file = "/data/ABOVE/Final_data/shp_files/CoreDomain.shp"
+# with fiona.open(shape_file, "r") as shapefile:
+#     shapes = [feature["geometry"] for feature in shapefile]
+years = np.arange(1985, 2015)
 
-years = np.arange(2008, 2010)
 for i in range(len(years)):
     year1 = years[i]
     print(year1)
@@ -84,18 +84,22 @@ for i in range(len(years)):
     year2 = years[i + 1]
     luc1 = rasterio.open(in_dir + "mosaic_" + str(year1) + ".tif")
     luc2 = rasterio.open(in_dir + "mosaic_" + str(year2) + ".tif")
-    # luc1 = xr.open_rasterio(in_dir + "mosaic_" + str(year1) + ".tif", chunks=chunks)
-    # luc2 = xr.open_rasterio(in_dir + "mosaic_" + str(year2) + ".tif", chunks=chunks)
-    luc1_masked = mymask(tif=luc1, shp=[shapes[0]])[0]
-    luc2_masked = mymask(tif=luc2, shp=[shapes[0]])[0]
-    # conf_tmp, conf_normal_tmp = np.asarray(
-    # f1=da.from_array(luc1_masked,chunks=chunks)
-    # confusionmatrix(luc1.ravel(), luc2.ravel(), unique,
-    #                 imap))
+    d1 = luc1.read(1)
+    d2 = luc2.read(1)
+    d1_rav = d1.ravel()
+    d2_rav = d2.ravel()
+    d1_dask = da.from_array(d1_rav, chunks=chunks)
+    d2_dask = da.from_array(d2_rav, chunks=chunks)
+    # luc1 = xr.open_rasterio(in_dir + "mosaic_" + str(year1) + ".tif", chunks=chunks).squeeze()
+    # luc2 = xr.open_rasterio(in_dir + "mosaic_" + str(year2) + ".tif", chunks=chunks).squeeze()
+    # luc1_masked = mymask(tif=luc1, shp=[shapes[0]])[0]
+    # luc2_masked = mymask(tif=luc2, shp=[shapes[0]])[0]
+    conf_tmp, conf_normal_tmp = np.asarray(
+        confusionmatrix(d1_dask, d2_dask, unique, imap))
 
-    conf_tmp = confusion_matrix(luc1_masked.ravel(),
-                                luc2_masked.ravel(),
-                                labels=unique)
+    #     conf_tmp = confusion_matrix(luc1_masked.ravel(),
+    #                                 luc2_masked.ravel(),
+    #                                 labels=unique)
 
     df_not_normalized = pd.DataFrame(data=conf_tmp,
                                      index=class_names,
@@ -103,11 +107,11 @@ for i in range(len(years)):
     df_not_normalized.to_csv(out_dir + "confusion_table_not_normalized_" +
                              str(year1) + ".csv")
 
-    conf_tmp_normalized = confusion_matrix(luc1_masked.ravel(),
-                                           luc2_masked.ravel(),
-                                           labels=unique,
-                                           normalize="true")
-    df_normalized = pd.DataFrame(data=conf_tmp_normalized,
+    #     conf_tmp_normalized = confusion_matrix(luc1_masked.ravel(),
+    #                                            luc2_masked.ravel(),
+    #                                            labels=unique,
+    #                                            normalize="true")
+    df_normalized = pd.DataFrame(data=conf_normal_tmp,
                                  index=class_names,
                                  columns=class_names)
     df_normalized.to_csv(out_dir + "confusion_table_normalized_" + str(year1) +

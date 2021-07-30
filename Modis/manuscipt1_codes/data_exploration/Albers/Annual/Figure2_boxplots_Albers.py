@@ -11,7 +11,7 @@ from matplotlib.pylab import savefig as save
 import pandas as pd
 
 
-def outliers_index(data, m=3):
+def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
     
@@ -38,12 +38,12 @@ def prepare_data(lc, et, albedo, lst, lc_names):
     df_et = pd.DataFrame(columns=lc_names)
     for i in range(len(lc_names)):
         print(i)
-        lst_tmp = lst.where(lc.isel(band=i) > 0.98)
-        et_tmp = et.where(lc.isel(band=i) > 0.98)
-        albedo_tmp = albedo.where(lc.isel(band=i) > 0.98)
-        I_lst = outliers_index(lst_tmp,2)
-        I_et = outliers_index(et_tmp,2)
-        I_albedo = outliers_index(albedo_tmp,2)
+        lst_tmp = lst.where(lc.isel(band=i) >= 0.98)
+        et_tmp = et.where(lc.isel(band=i) >= 0.98)
+        albedo_tmp = albedo.where(lc.isel(band=i) >= 0.98)
+        I_lst = outliers_index(lst_tmp)
+        I_et = outliers_index(et_tmp)
+        I_albedo = outliers_index(albedo_tmp)
         lst_tmp = lst_tmp.where((I_lst == False) & (I_et == False)
                                 & (I_albedo == False))
         df_lst[lc_names[i]] = lst_tmp.values.ravel()
@@ -181,18 +181,21 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
 
 
 in_dir = "/data/ABOVE/Final_data/"
-# out_dir = "/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
-lc_names = [
-    "EF", "DF", "Shrub", "Herbaceous", "Sparse", "Barren", "Fen", "Water"
-]
-luc = xr.open_dataarray(in_dir + "LUC/LUC_10/LULC_10_2003_2014.nc")
-lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
-albedo = xr.open_dataarray(in_dir +
-                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
+           "Albers/Figures_MS1/")
+# out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
+lc_names = ["EF", "DF", "Shrub", "Herbaceous", "Sparse", "Barren", "Fen"]
+luc = xr.open_dataarray(in_dir + "LUC/albers/LULC_10_2003_2014.nc")
+lst_mean = xr.open_dataset(in_dir + (
+    "LST_Final/LST/Annual_Mean/albers/albers_proj_lst_mean_Annual.nc"))
+lst_mean = lst_mean["lst_mean_Annual"]
+lst_mean = lst_mean.rename({"x": "lon", "y": "lat"})
+albedo = xr.open_dataarray(
+    in_dir + "ALBEDO_Final/Annual_Albedo/albers/final_annual_albedo.nc")
 albedo = albedo.rename({"x": "lon", "y": "lat"})
-et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
+et = xr.open_dataset(in_dir +
+                     "ET_Final/Annual_ET/albers/albers_proj_ET_Annual.nc")
+et = et["ET_Annual"]
 et = et.rename({"x": "lon", "y": "lat"})
 
 lc_2003 = luc.loc[2003]
@@ -207,6 +210,7 @@ et_2013 = et.loc[2013]
 
 a = np.arange(0, len(lc_names)) % 2
 txt_pos = np.where(a == 0, 300, 310)
+
 df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2003,
                                                           et=et_2003,
                                                           albedo=albedo_2003,
@@ -222,6 +226,3 @@ df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2013,
                                                           lc_names=lc_names)
 myboxplot_group(df_final_lst, df_final_et, df_final_albedo, "2013", lc_names,
                 txt_pos, "Boxplot_groups_2013.png")
-
-print("Figure XXX was reproduced and is located in:\n")
-print(out_dir)

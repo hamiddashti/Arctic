@@ -57,6 +57,8 @@ Albedo = Albedo.rename({"x": "lon", "y": "lat"})
 
 # This is beacuse the coordinates are not exactly the same due to rounding issu
 LC = LC.assign_coords({"lat": LST.lat, "lon": LST.lon})
+ET = ET.assign_coords({"lat": LST.lat, "lon": LST.lon})
+Albedo = Albedo.assign_coords({"lat": LST.lat, "lon": LST.lon})
 
 # Take the difference between year 2003 and 2013
 dlcc = LC.loc[2013] - LC.loc[2003]
@@ -68,6 +70,7 @@ dalbedo = Albedo.loc[2013] - Albedo.loc[2003]
 dlcc = dlcc.where((LC.loc[2013] != 0) & (LC.loc[2003] != 0))
 dlcc_abs = abs(dlcc)
 changed = (dlcc_abs > 0.02).any(dim="band") * 1  #its one if changed else zero
+
 
 changed_roll = changed.rolling({
     "lat": WINSIZE,
@@ -164,16 +167,16 @@ for i in range(0, dlst_nv_no_outlier.shape[0]):
         dalbedo_nv_no_outlier[i, j] = dalbedo_not_changed_clean.mean()
 
 dlst_lcc = dlst - dlst_nv_no_outlier
-det = det.assign_coords({"lat": LST.lat, "lon": LST.lon})
+# det = det.assign_coords({"lat": LST.lat, "lon": LST.lon})
 det_nv_no_outlier = det_nv_no_outlier.assign_coords({
     "lat": LST.lat,
     "lon": LST.lon
 })
-dalbedo = dalbedo.assign_coords({"lat": LST.lat, "lon": LST.lon})
-dalbedo_nv_no_outlier = dalbedo_nv_no_outlier.assign_coords({
-    "lat": LST.lat,
-    "lon": LST.lon
-})
+# dalbedo = dalbedo.assign_coords({"lat": LST.lat, "lon": LST.lon})
+# dalbedo_nv_no_outlier = dalbedo_nv_no_outlier.assign_coords({
+#     "lat": LST.lat,
+#     "lon": LST.lon
+# })
 det_lcc = det - det_nv_no_outlier
 dalbedo_lcc = dalbedo - dalbedo_nv_no_outlier
 
@@ -181,15 +184,15 @@ dlcc.to_netcdf(out_dir + "dlcc.nc")
 changed.to_netcdf(out_dir + "changed.nc")
 
 dlst.to_netcdf(out_dir + "dlst_total.nc")
-dlst_nv_no_outlier.to_netcdf(out_dir + "dlst_nv_no_outlier.nc")
+dlst_nv_no_outlier.to_netcdf(out_dir + "dlst_nv.nc")
 dlst_lcc.to_netcdf(out_dir + "dlst_lcc.nc")
 
 det.to_netcdf(out_dir + "det_total.nc")
-det_nv_no_outlier.to_netcdf(out_dir + "det_nv_no_outlier.nc")
+det_nv_no_outlier.to_netcdf(out_dir + "det_nv.nc")
 det_lcc.to_netcdf(out_dir + "det_lcc.nc")
 
 dalbedo.to_netcdf(out_dir + "dalbedo_total.nc")
-dalbedo_nv_no_outlier.to_netcdf(out_dir + "dalbedo_nv_no_outlier.nc")
+dalbedo_nv_no_outlier.to_netcdf(out_dir + "dalbedo_nv.nc")
 dalbedo_lcc.to_netcdf(out_dir + "dalbedo_lcc.nc")
 """
 # ----------------------------------------------------------------------

@@ -218,13 +218,6 @@ albedo = xr.open_dataarray(in_dir +
                            "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
 et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
 
-# luc = luc.isel(y=range(1400, 1600), x=range(4400, 4600))
-# lst_mean = lst_mean.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_day = lst_day.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# lst_night = lst_night.isel(lat=range(1400, 1600), lon=range(4400, 4600))
-# albedo = albedo.isel(y=range(1400, 1600), x=range(4400, 4600))
-# et = et.isel(y=range(1400, 1600), x=range(4400, 4600))
-
 # Calculating the natural variability for LST, Albedo and ET
 years = [2003, 2013]
 win_size = 51

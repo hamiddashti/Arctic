@@ -237,18 +237,18 @@ for season in seasons:
     lst_night = xr.open_dataarray(in_dir +
                                   "LST_Final/LST/Seasonal_Mean/LST_Night_" +
                                   season + ".nc")
-    # albedo = xr.open_dataarray(in_dir +
-    #                            "ALBEDO_Final/Seasonal_Albedo/geographic/" +
-    #                            season + "/albedo_" + season + ".n")
-    # et = xr.open_dataarray(in_dir +
-    #                        "ET_Final/Seasonal_ET/geographic/ET_Mean_" +
-    #                        season + ".nc")
+    albedo = xr.open_dataarray(in_dir +
+                               "ALBEDO_Final/Seasonal_Albedo/geographic/" +
+                               season + "/Albedo_Mean_" + season + ".nc")
+    et = xr.open_dataarray(in_dir +
+                           "ET_Final/Seasonal_ET/geographic/"+season+"/ET_Mean_" +
+                           season + ".nc")
 
     # Calculating the natural variability for LST, Albedo and ET
     # var_names = ["dlst_mean", "dlst_day", "dlst_night", "albedo", "et"]
-    var_names = ["dlst_mean", "dlst_day", "dlst_night"]
-    # datasets = [lst_mean, lst_day, lst_night, albedo, et]
-    datasets = [lst_mean, lst_day, lst_night]
+    var_names = ["albedo", "et"]
+    datasets = [albedo, et]
+    
 
     for i in range(len(var_names)):
         var_name = var_names[i]

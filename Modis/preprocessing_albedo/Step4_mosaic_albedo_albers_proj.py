@@ -71,5 +71,4 @@ ds_reproj.loc[2003].to_netcdf("/data/home/hamiddashti/mnt/nasa_above/working/mod
 
 ds_reproj.to_netcdf(out_dir+"albedo_annual.nc")
 
-ds_reproj.to_netcdf(out_dir+"albedo_annual2.nc") 
-~np.isnan([np.nan,1])
+

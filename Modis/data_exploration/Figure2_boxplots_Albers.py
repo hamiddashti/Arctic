@@ -11,7 +11,7 @@ from matplotlib.pylab import savefig as save
 import pandas as pd
 
 
-def outliers_index(data, m=3):
+def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
     
@@ -38,12 +38,12 @@ def prepare_data(lc, et, albedo, lst, lc_names):
     df_et = pd.DataFrame(columns=lc_names)
     for i in range(len(lc_names)):
         print(i)
-        lst_tmp = lst.where(lc.isel(band=i) > 0.98)
-        et_tmp = et.where(lc.isel(band=i) > 0.98)
-        albedo_tmp = albedo.where(lc.isel(band=i) > 0.98)
-        I_lst = outliers_index(lst_tmp, 2)
-        I_et = outliers_index(et_tmp, 2)
-        I_albedo = outliers_index(albedo_tmp, 2)
+        lst_tmp = lst.where(lc.isel(band=i) >= 0.90)
+        et_tmp = et.where(lc.isel(band=i) >= 0.90)
+        albedo_tmp = albedo.where(lc.isel(band=i) >= 0.90)
+        I_lst = outliers_index(lst_tmp)
+        I_et = outliers_index(et_tmp)
+        I_albedo = outliers_index(albedo_tmp)
         lst_tmp = lst_tmp.where((I_lst == False) & (I_et == False)
                                 & (I_albedo == False))
         df_lst[lc_names[i]] = lst_tmp.values.ravel()
@@ -61,7 +61,7 @@ def prepare_data(lc, et, albedo, lst, lc_names):
         "name": "LST",
         "df": df_lst,
         "label": "LST [K]",
-        "ylim": [230, 330],
+        "ylim": [230, 322],
     }
 
     df_final_et = {
@@ -84,18 +84,18 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
     """ boxplot of multiple pandas dataframe
     """
     plt.close()
-    fig, ax1 = plt.subplots(figsize=(9, 5))
+    fig, ax1 = plt.subplots(figsize=(12, 6))
     widths = 0.3
-    pltfont = {'fontname': 'serif'}
+    pltfont = {'fontname': 'Times New Roman'}
     df1_mean = np.round(df1["df"].mean().values, 2)
     df1_sd = np.round(df1["df"].std().values, 2)
     df2_mean = np.round(df2["df"].mean().values, 2)
     df2_sd = np.round(df2["df"].std().values, 2)
     df3_mean = np.round(df3["df"].mean().values, 2)
     df3_sd = np.round(df3["df"].std().values, 2)
-    ax1.set_ylabel(df1["label"], color="tab:orange", fontsize=12)
+    ax1.set_ylabel(df1["label"], color="tab:orange", fontsize=16)
     ax1.set_ylim(df1["ylim"])
-    ax1.yaxis.set_tick_params(labelsize=12)
+    ax1.yaxis.set_tick_params(labelsize=13)
     n = df1["df"].notnull().sum()
     # Filtering nan valuse for matplotlib boxplot
     filtered_df1 = make_mask(df1["df"].values)
@@ -127,16 +127,15 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
             df3["name"] + " = " + str(df3_mean[tick]) + "$\pm$" +
             str(df3_sd[tick]) + "\n" + "n" + " = " + str(n[tick]),
             horizontalalignment="center",
-            fontsize=6,
+            fontsize=10.5,
             color="k",
             weight="semibold",
-            wrap=True)
-        # **pltfont)
+            **pltfont)
         counter = counter + 1
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
     ax2.set_ylim(df2["ylim"])
-    ax2.set_ylabel(df2["label"], color="tab:blue", fontsize=12, **pltfont)
-    ax2.yaxis.set_tick_params(labelsize=12)
+    ax2.set_ylabel(df2["label"], color="tab:blue", fontsize=16, **pltfont)
+    ax2.yaxis.set_tick_params(labelsize=13)
     filtered_df2 = make_mask(df2["df"].values)
     res2 = ax2.boxplot(
         filtered_df2,
@@ -156,8 +155,8 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
     ax3.spines["right"].set_position(("axes", 1.1))
     ax3.set_frame_on(True)
     ax3.patch.set_visible(False)
-    ax3.set_ylabel(df3["label"], color="tab:green", fontsize=12, **pltfont)
-    ax3.yaxis.set_tick_params(labelsize=12)
+    ax3.set_ylabel(df3["label"], color="tab:green", fontsize=16, **pltfont)
+    ax3.yaxis.set_tick_params(labelsize=13)
     filtered_df3 = make_mask(df3["df"].values)
     res3 = ax3.boxplot(
         filtered_df3,
@@ -172,15 +171,11 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
         patch.set_facecolor("tab:green")
     ax1.set_xlim([-0.55, len(columns) - 0.25])
     ax1.set_xticks(np.arange(len(columns)))
-    ax1.set_xticklabels(columns,
-                        fontsize=9,
-                        fontweight="semibold",
-                        rotation=45,
-                        **pltfont)
+    ax1.set_xticklabels(columns, fontsize=12, fontweight="semibold", **pltfont)
     ax1.yaxis.grid(False)
     ax1.axhline(color="k")
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.title(title, fontsize=12, fontweight="semibold", **pltfont)
+    plt.title(title, fontsize=13, fontweight="semibold", **pltfont)
     plt.savefig(out_dir + outname)
     plt.close()
 
@@ -188,15 +183,19 @@ def myboxplot_group(df1, df2, df3, title, columns, txt_pos, outname):
 in_dir = "/data/ABOVE/Final_data/"
 # out_dir = "/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-           "Geographics/Figures_MS1/")
-lc_names = ["EF", "DF", "Shrub", "Herb", "Sparse", "Barren", "Fen", "Water"]
-luc = xr.open_dataarray(in_dir + "LUC/LUC_10/LULC_10_2003_2014.nc")
-lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
-albedo = xr.open_dataarray(in_dir +
-                           "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
+           "Albers/Figures_MS1/")
+lc_names = ["EF", "DF", "Shrub", "Herbaceous", "Sparse", "Barren", "Fen"]
+luc = xr.open_dataarray(in_dir + "LUC/albers/LULC_10_2003_2014.nc")
+lst_mean = xr.open_dataset(in_dir + (
+    "LST_Final/LST/Annual_Mean/albers/albers_proj_lst_mean_Annual.nc"))
+lst_mean = lst_mean["lst_mean_Annual"]
+lst_mean = lst_mean.rename({"x": "lon", "y": "lat"})
+albedo = xr.open_dataarray(
+    in_dir + "ALBEDO_Final/Annual_Albedo/albers/final_annual_albedo.nc")
 albedo = albedo.rename({"x": "lon", "y": "lat"})
-et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
+et = xr.open_dataset(in_dir +
+                     "ET_Final/Annual_ET/albers/albers_proj_ET_Annual.nc")
+et = et["ET_Annual"]
 et = et.rename({"x": "lon", "y": "lat"})
 
 lc_2003 = luc.loc[2003]
@@ -209,25 +208,21 @@ lst_mean_2013 = lst_mean.loc[2013]
 albedo_2013 = albedo.loc[2013]
 et_2013 = et.loc[2013]
 
-df_final_lst_2003, df_final_et_2003, df_final_albedo_2003 = prepare_data(
-    lc=lc_2003,
-    et=et_2003,
-    albedo=albedo_2003,
-    lst=lst_mean_2003,
-    lc_names=lc_names)
-
 a = np.arange(0, len(lc_names)) % 2
-txt_pos = np.where(a == 0, 290, 315)
-myboxplot_group(df_final_lst_2003, df_final_et_2003, df_final_albedo_2003,
-                "2003", lc_names, txt_pos, "Fig2_Boxplot_groups_2003.png")
+txt_pos = np.where(a == 0, 300, 310)
 
-df_final_lst_2013, df_final_et_2013, df_final_albedo_2013 = prepare_data(
-    lc=lc_2013,
-    et=et_2013,
-    albedo=albedo_2013,
-    lst=lst_mean_2013,
-    lc_names=lc_names)
-myboxplot_group(df_final_lst_2013, df_final_et_2013, df_final_albedo_2013,
-                "2013", lc_names, txt_pos, "Fig2_Boxplot_groups_2013.png")
-print("Figure XXX was reproduced and is located in:\n")
-print(out_dir)
+df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2003,
+                                                          et=et_2003,
+                                                          albedo=albedo_2003,
+                                                          lst=lst_mean_2003,
+                                                          lc_names=lc_names)
+myboxplot_group(df_final_lst, df_final_et, df_final_albedo, "2003", lc_names,
+                txt_pos, "Boxplot_groups_2003.png")
+
+df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2013,
+                                                          et=et_2013,
+                                                          albedo=albedo_2013,
+                                                          lst=lst_mean_2013,
+                                                          lc_names=lc_names)
+myboxplot_group(df_final_lst, df_final_et, df_final_albedo, "2013", lc_names,
+                txt_pos, "Boxplot_groups_2013.png")

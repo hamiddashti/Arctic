@@ -26,6 +26,8 @@ def outliers_index(data, m=3):
     """
     Returns true if a value is outlier
     https://www.itl.nist.gov/div898/handbook/eda/section3/eda356.htm#MAD
+    https://stats.stackexchange.com/questions/123895/
+    mad-formula-for-outlier-detection
     :param int data: numpy array
     :param int m: # of std to include data 
     """
@@ -102,11 +104,11 @@ yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
 
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
-out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-           "Geographics/Figures_MS1/")
+# out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
+#            "Geographics/Figures_MS1/")
 
-# out_dir = (
-#     "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
+out_dir = (
+    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
 
 # The map of dLST due to LCC
 dlst_lcc = xr.open_dataarray(
@@ -191,7 +193,7 @@ for i in range(len(lc_names)):
     })
     df = df.dropna()
     # Bin data based on dLCC
-    dlcc_bins = np.linspace(-1.001, 1, 2002)
+    dlcc_bins = np.linspace(-1.01, 1, 202)
     out = fit_bins_ols(df=df, bins=dlcc_bins, var="dlst")
 
     # The equation for the mean model (i.e. gain/loss)
@@ -263,7 +265,7 @@ for i in range(len(lc_names)):
             "dlcc": -transintion_loss
         })
         df_loss = df_loss.dropna()
-        bins_loss = np.linspace(-1, 0, 1001)
+        bins_loss = np.linspace(-1, 0, 101)
         df_loss["bins"] = pd.cut(df_loss["dlcc"],
                                  bins=bins_loss,
                                  include_lowest=True)
@@ -276,7 +278,7 @@ for i in range(len(lc_names)):
             "dlcc": transintion_gain,
         })
         df_gain = df_gain.dropna()
-        bins_gain = np.linspace(0, 1, 1001)
+        bins_gain = np.linspace(0, 1, 101)
         out_gain = fit_bins_ols(df=df_gain, bins=bins_gain, var="dlst")
 
         # Concatenate the loss and gain transitions and fit a linear model
@@ -307,6 +309,8 @@ for i in range(len(lc_names)):
                               color=palette[k],
                               linewidth=3,
                               label=lc_names[k])
+        sns.regplot(x=X, y=Y, ax=axs[axs_counter])
+        axs[axs_counter].scatter(X, Y, color=palette[k])
 
     axs_counter += 1
 
@@ -346,7 +350,7 @@ pltfont = {'fontname': 'Times New Roman'}
 fig.supylabel("$\Delta LST_{LCC}$ [k]", fontsize=16, **pltfont)
 fig.suptitle("A", x=0.02, y=0.85, size=30, **pltfont)
 plt.tight_layout()
-save(out_dir + "Fig3_LST_Gain_Loss.png")
+save(out_dir + "test.png")
 
 # --------------------------------------------------------------------------
 

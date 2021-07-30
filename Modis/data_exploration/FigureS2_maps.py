@@ -52,14 +52,13 @@ I_det_nv = outliers_index(det_nv, 2)
 dlst_nv_clean = dlst_mean_nv.where((I_dlst_nv == False)
                                    & (I_dalbedo_nv == False)
                                    & (I_det_nv == False))
-dlst_nv_clean.to_netcdf(out_dir + "dlst_nv_clean.nc")
+dlst_nv_clean.to_netcdf("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/dlst_nv_clean.nc")
 dalbedo_nv_clean = dalbedo_nv.where((I_dlst_nv == False)
                                     & (I_dalbedo_nv == False)
                                     & (I_det_nv == False))
 dalbedo_nv_clean.to_netcdf(out_dir + "dalbedo_nv_clean.nc")
 det_nv_clean = det_nv.where((I_dlst_nv == False) & (I_dalbedo_nv == False)
                             & (I_det_nv == False))
-det_nv_clean.to_netcdf(out_dir + "det_nv_clean.nc")
 
 data = [
     dlst_nv_clean, dlst_lcc_clean, dalbedo_nv_clean, dalbedo_lcc_clean,

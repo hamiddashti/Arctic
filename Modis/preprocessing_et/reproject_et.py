@@ -28,4 +28,19 @@ for f in fnames:
     f_reproj.to_netcdf(out_dir + "albers_proj_" + basename)
 # -------------------- End of annual processing ------------------------
 
-# -------------------- Growing season processing -----------------------
+# -------------------- Seasonal season processing -----------------------
+
+in_dir = "/data/ABOVE/MODIS/ET/Seasonal_ET/"
+out_dir = "/data/home/hamiddashti/nasa_above/outputs/et_processed/Seasonal/"
+fnames = glob.glob(in_dir + "*nc")
+for f in fnames:
+    basename = os.path.basename(f)
+    var_name = os.path.splitext(basename)[0]
+    print(basename)
+    da = xr.open_dataarray(f, decode_coords="all")
+    da = da.rename(var_name)
+    da.rio.write_crs(4326, inplace=True)  # The original crs is geographic
+    f_reproj = da.rio.reproject_match(
+        lst_file, resampling=Resampling.bilinear)  # match to LST data
+    f_reproj.to_netcdf(out_dir + "albers/albers_proj_" + basename)
+# -------------------- End of annual processing ------------------------

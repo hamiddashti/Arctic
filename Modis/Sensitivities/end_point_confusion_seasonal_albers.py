@@ -69,119 +69,132 @@ for i in range(0, NUMBER_OF_CLASSES):
 in_dir = "/data/ABOVE/Final_data/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 
-luc2003 = rasterio.open(in_dir + 'LUC/albers/mosaic_reproject_2003.tif')
-luc2013 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2013.tif')
+luc2003 = rasterio.open(in_dir + 'LUC/albers/mosaic_2003.tif')
+luc2013 = rasterio.open(in_dir + 'LUC/albers/mosaic_2013.tif')
 
 changed_pixels_mask = xr.open_dataarray(
     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-    "albers/changed_pixels.nc")
-shape_file = in_dir + "shp_files/ABoVE_1km_Grid_4326_area.shp"
-# shape_file = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
-# "test/test.shp")
+    "albers/changed.nc")
+shape_file = out_dir + "grid/python_grid.shp"
 print('reading the shapefile')
 with fiona.open(shape_file, "r") as shapefile:
     shapes = [feature["geometry"] for feature in shapefile]
-    area = [feature["properties"]["area"] for feature in shapefile]
+    # area = [feature["properties"]["area"] for feature in shapefile]
 
-seasons = ["JJA", "DJF", "MAM", "SON"]
-
+seasons = ["DJF", "JJA", "MAM", "SON"]
 for season in seasons:
     print(season)
-    lst_mean = xr.open_dataarray(in_dir +
-                                 "LST_Final/LST/Seasonal_Mean/albers/" +
-                                 season + "/LST_Mean_" + season + ".nc")
+
+    lst_mean = xr.open_dataset(in_dir + "LST_Final/LST/Seasonal_Mean/albers/" +
+                               season + "/LST_Mean_" + season + ".nc",
+                               decode_cf="all")
+    lst_mean = lst_mean["lst_mean_season_resample"]
     datetimeindex = lst_mean.indexes['time'].to_datetimeindex()
     lst_mean['time'] = datetimeindex
-    lst_day = xr.open_dataarray(in_dir +
-                                "LST_Final/LST/Seasonal_Mean/albers/" +
-                                season + "/LST_Day_" + season + ".nc")
-    lst_night = xr.open_dataarray(in_dir +
-                                  "LST_Final/LST/Seasonal_Mean/albers/" +
-                                  season + "/LST_Night_" + season + ".nc")
-    et = xr.open_dataarray(in_dir + "ET_Final/Seasonal_ET/albers/" +
-                           season + "albers_proj/ET_Mean_" + season + ".nc")
+
+    # lst_day = xr.open_dataset(in_dir + "LST_Final/LST/Seasonal_Mean/albers/" +
+    #                           season + "/LST_Day_" + season + ".nc",
+    #                           decode_cf="all")
+    # lst_day = lst_day["lst_day_season_resample"]
+    # datetimeindex = lst_day.indexes['time'].to_datetimeindex()
+    # lst_day['time'] = datetimeindex
+
+    # lst_night = xr.open_dataset(
+    #     in_dir + "LST_Final/LST/Seasonal_Mean/albers/" + season +
+    #     "/LST_Night_" + season + ".nc",
+    #     decode_cf="all")
+    # lst_night = lst_night["lst_night_season_resample"]
+    # datetimeindex = lst_night.indexes['time'].to_datetimeindex()
+    # lst_night['time'] = datetimeindex
+
+    lst_mean = lst_mean.rename({"x": "lon", "y": "lat"})
+    # lst_day = lst_day.rename({"x": "lon", "y": "lat"})
+    # lst_night = lst_night.rename({"x": "lon", "y": "lat"})
+
+    et = xr.open_dataset(in_dir + "ET_Final/Seasonal_ET/albers/" + season +
+                         "/albers_proj_ET_" + season + ".nc",
+                         decode_cf="all")
+    et = et["ET_Season"]
     et = et.rename({"x": "lon", "y": "lat"})
 
-    a = lst_mean.loc["2003":"2013"]
-    et = et.where(a.notnull())
+    # a = lst_mean.loc["2003":"2013"]
+    # et = et.where(a.notnull())
 
-    # albedo = xr.open_dataarray(in_dir +
-    #                            "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
     albedo = xr.open_dataarray(in_dir +
-                               "ALBEDO_Final/Seasonal_Albedo/geographic/" +
+                               "ALBEDO_Final/Seasonal_Albedo/albers/" +
                                season + "/Albedo_Mean_" + season + ".nc")
     lst_mean_2003 = lst_mean.loc["2003"]
     lst_mean_2013 = lst_mean.loc["2013"]
-    lst_day_2003 = lst_day.loc["2003"]
-    lst_day_2013 = lst_day.loc["2013"]
-    lst_night_2003 = lst_night.loc["2003"]
-    lst_night_2013 = lst_night.loc["2013"]
+    # lst_day_2003 = lst_day.loc["2003"]
+    # lst_day_2013 = lst_day.loc["2013"]
+    # lst_night_2003 = lst_night.loc["2003"]
+    # lst_night_2013 = lst_night.loc["2013"]
     et_2003 = et.loc["2003"]
     et_2013 = et.loc["2013"]
     albedo_2003 = albedo.loc["2003"]
     albedo_2013 = albedo.loc["2013"]
     dlst_mean_total = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_mean_changed.nc")
+        "albers/" + season + "/dlst_total_" + season + ".nc")
 
     dlst_mean_lcc = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_mean_lcc.nc")
+        "albers/" + season + "/dlst_lcc_" + season + ".nc")
     dlst_mean_nv = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_mean_nv.nc")
+        "albers/" + season + "/dlst_nv_" + season + ".nc")
 
-    dlst_day_total = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_day_changed.nc")
-    dlst_day_lcc = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_day_lcc.nc")
-    dlst_day_nv = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_day_nv.nc")
-    dlst_night_total = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_night_changed.nc")
-    dlst_night_lcc = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_night_lcc.nc")
-    dlst_night_nv = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/dlst_night_nv.nc")
+    # dlst_day_total = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "albers/" + season + "/dlst_day_changed.nc")
+    # dlst_day_lcc = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "geographic/" + season + "/dlst_day_lcc.nc")
+    # dlst_day_nv = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "geographic/" + season + "/dlst_day_nv.nc")
+    # dlst_night_total = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "geographic/" + season + "/dlst_night_changed.nc")
+    # dlst_night_lcc = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "geographic/" + season + "/dlst_night_lcc.nc")
+    # dlst_night_nv = xr.open_dataarray(
+    #     out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+    #     "geographic/" + season + "/dlst_night_nv.nc")
     det_total = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/et_changed.nc")
-    det_lcc = xr.open_dataarray(
-        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/et_lcc.nc")
+        "albers/" + season + "/det_total_" + season + ".nc")
     det_nv = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/et_nv.nc")
+        "albers/" + season + "/det_nv_" + season + ".nc")
+    det_lcc = xr.open_dataarray(
+        out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
+        "albers/" + season + "/det_lcc_" + season + ".nc")
     dalbedo_total = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/albedo_changed.nc")
+        "albers/" + season + "/dalbedo_total_" + season + ".nc")
     dalbedo_lcc = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/albedo_lcc.nc")
+        "albers/" + season + "/dalbedo_lcc_" + season + ".nc")
     dalbedo_nv = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/" + season + "/albedo_nv.nc")
+        "albers/" + season + "/dalbedo_nv_" + season + ".nc")
     dlcc = xr.open_dataarray(
         out_dir + "Natural_Variability/Natural_Variability_Seasonal_Outputs/"
-        "geographic/dlcc.nc")
+        "albers/" + season + "/dlcc_" + season + ".nc")
 
     # Calculate the area weights based on the latitude
-    weights = np.cos(np.deg2rad(dlst_mean_total.lat))
-    weights = np.transpose([weights.values] * dlst_mean_total.shape[1])
+    # weights = np.cos(np.deg2rad(dlst_mean_total.lat))
+    # weights = np.transpose([weights.values] * dlst_mean_total.shape[1])
 
     changed_pixels_mask_val = np.ravel(changed_pixels_mask.values, order="F")
     lst_mean_2003_val = np.ravel(lst_mean_2003.values, order="F")
     lst_mean_2013_val = np.ravel(lst_mean_2013.values, order="F")
-    lst_day_2003_val = np.ravel(lst_day_2003.values, order="F")
-    lst_day_2013_val = np.ravel(lst_day_2013.values, order="F")
-    lst_night_2003_val = np.ravel(lst_night_2003.values, order="F")
-    lst_night_2013_val = np.ravel(lst_night_2013.values, order="F")
+    # lst_day_2003_val = np.ravel(lst_day_2003.values, order="F")
+    # lst_day_2013_val = np.ravel(lst_day_2013.values, order="F")
+    # lst_night_2003_val = np.ravel(lst_night_2003.values, order="F")
+    # lst_night_2013_val = np.ravel(lst_night_2013.values, order="F")
     et_2003_val = np.ravel(et_2003.values, order="F")
     et_2013_val = np.ravel(et_2013.values, order="F")
     albedo_2003_val = np.ravel(albedo_2003.values, order="F")
@@ -189,12 +202,12 @@ for season in seasons:
     dlst_mean_total_val = np.ravel(dlst_mean_total.values, order="F")
     dlst_mean_lcc_val = np.ravel(dlst_mean_lcc.values, order="F")
     dlst_mean_nv_val = np.ravel(dlst_mean_nv.values, order="F")
-    dlst_day_total_val = np.ravel(dlst_day_total.values, order="F")
-    dlst_day_lcc_val = np.ravel(dlst_day_lcc.values, order="F")
-    dlst_day_nv_val = np.ravel(dlst_day_nv.values, order="F")
-    dlst_night_total_val = np.ravel(dlst_night_total.values, order="F")
-    dlst_night_lcc_val = np.ravel(dlst_night_lcc.values, order="F")
-    dlst_night_nv_val = np.ravel(dlst_night_nv.values, order="F")
+    # dlst_day_total_val = np.ravel(dlst_day_total.values, order="F")
+    # dlst_day_lcc_val = np.ravel(dlst_day_lcc.values, order="F")
+    # dlst_day_nv_val = np.ravel(dlst_day_nv.values, order="F")
+    # dlst_night_total_val = np.ravel(dlst_night_total.values, order="F")
+    # dlst_night_lcc_val = np.ravel(dlst_night_lcc.values, order="F")
+    # dlst_night_nv_val = np.ravel(dlst_night_nv.values, order="F")
     det_total_val = np.ravel(det_total.values, order="F")
     det_lcc_val = np.ravel(det_lcc.values, order="F")
     det_nv_val = np.ravel(det_nv.values, order="F")
@@ -204,7 +217,7 @@ for season in seasons:
     dlcc_val = dlcc.values.reshape(dlcc.shape[0],
                                    dlcc.shape[1] * dlcc.shape[2],
                                    order="F")
-    weights_val = np.ravel(weights, order="F")
+    # weights_val = np.ravel(weights, order="F")
 
     pix_index = []
     final_confusion = []
@@ -239,7 +252,7 @@ for season in seasons:
     # final_percent_2013 = []
     final_dlcc = []
     Err = []
-    final_weights = []
+    # final_weights = []
     # unique and imap are input to the confusionmatrix function
     unique = np.arange(1, NUMBER_OF_CLASSES + 1)
     imap = {key: i for i, key in enumerate(unique)}
@@ -248,7 +261,7 @@ for season in seasons:
 
     # for i in range(6588237, 6698651):
     for i in range(len(shapes)):
-
+        print((i / len(shapes)) * 100)
         if changed_pixels_mask_val[i] == 0:
             continue
         luc2003_masked = mymask(tif=luc2003, shp=[shapes[i]])[0]
@@ -287,10 +300,10 @@ for season in seasons:
         pix_index.append(i)
         final_lst_mean_2003.append(lst_mean_2003_val[i])
         final_lst_mean_2013.append(lst_mean_2013_val[i])
-        final_lst_day_2003.append(lst_day_2003_val[i])
-        final_lst_day_2013.append(lst_day_2013_val[i])
-        final_lst_night_2003.append(lst_night_2003_val[i])
-        final_lst_night_2013.append(lst_night_2013_val[i])
+        # final_lst_day_2003.append(lst_day_2003_val[i])
+        # final_lst_day_2013.append(lst_day_2013_val[i])
+        # final_lst_night_2003.append(lst_night_2003_val[i])
+        # final_lst_night_2013.append(lst_night_2013_val[i])
         final_et_2003.append(et_2003_val[i])
         final_et_2013.append(et_2013_val[i])
         final_albedo_2003.append(albedo_2003_val[i])
@@ -298,23 +311,23 @@ for season in seasons:
         final_dlst_mean_total.append(dlst_mean_total_val[i])
         final_dlst_mean_lcc.append(dlst_mean_lcc_val[i])
         final_dlst_mean_nv.append(dlst_mean_nv_val[i])
-        final_dlst_day_total.append(dlst_day_total_val[i])
-        final_dlst_day_lcc.append(dlst_day_lcc_val[i])
-        final_dlst_day_nv.append(dlst_day_nv_val[i])
-        final_dlst_night_total.append(dlst_night_total_val[i])
-        final_dlst_night_lcc.append(dlst_night_lcc_val[i])
-        final_dlst_night_nv.append(dlst_night_nv_val[i])
+        # final_dlst_day_total.append(dlst_day_total_val[i])
+        # final_dlst_day_lcc.append(dlst_day_lcc_val[i])
+        # final_dlst_day_nv.append(dlst_day_nv_val[i])
+        # final_dlst_night_total.append(dlst_night_total_val[i])
+        # final_dlst_night_lcc.append(dlst_night_lcc_val[i])
+        # final_dlst_night_nv.append(dlst_night_nv_val[i])
         final_det_total.append(det_total_val[i])
         final_det_lcc.append(det_lcc_val[i])
         final_det_nv.append(det_nv_val[i])
         final_dalbedo_total.append(dalbedo_total_val[i])
         final_dalbedo_lcc.append(dalbedo_lcc_val[i])
         final_dalbedo_nv.append(dalbedo_nv_val[i])
-        final_area.append(area[i])
+        # final_area.append(area[i])
         # final_percent_2003.append(percent_2003)
         # final_percent_2013.append(percent_2013)
         final_dlcc.append(dlcc_val[:, i])
-        final_weights.append(weights_val[i])
+        # final_weights.append(weights_val[i])
 
     pix_index = np.array(pix_index)
     final_confusion = np.array(final_confusion)
@@ -344,11 +357,11 @@ for season in seasons:
     final_dalbedo_total = np.array(final_dalbedo_total)
     final_dalbedo_lcc = np.array(final_dalbedo_lcc)
     final_dalbedo_nv = np.array(final_dalbedo_nv)
-    final_area = np.array(final_area)
+    # final_area = np.array(final_area)
     # final_percent_2003 = np.array(final_percent_2003)
     # final_percent_2013 = np.array(final_percent_2013)
     final_dlcc = np.array(final_dlcc)
-    final_weights = np.array(final_weights)
+    # final_weights = np.array(final_weights)
 
     ds = xr.Dataset(
         data_vars={
@@ -361,10 +374,10 @@ for season in seasons:
             "PIX_INDEX": (("ID"), pix_index),
             "LST_MEAN_2003": (("ID"), final_lst_mean_2003),
             "LST_MEAN_2013": (("ID"), final_lst_mean_2013),
-            "LST_DAY_2003": (("ID"), final_lst_day_2003),
-            "LST_DAY_2013": (("ID"), final_lst_day_2013),
-            "LST_NIGHT_2003": (("ID"), final_lst_night_2003),
-            "LST_NIGHT_2013": (("ID"), final_lst_night_2013),
+            # "LST_DAY_2003": (("ID"), final_lst_day_2003),
+            # "LST_DAY_2013": (("ID"), final_lst_day_2013),
+            # "LST_NIGHT_2003": (("ID"), final_lst_night_2003),
+            # "LST_NIGHT_2013": (("ID"), final_lst_night_2013),
             "ET_2003": (("ID"), final_et_2003),
             "ET_2013": (("ID"), final_et_2013),
             "ALBEDO_2003": (("ID"), final_albedo_2003),
@@ -372,20 +385,20 @@ for season in seasons:
             "DLST_MEAN_TOTAL": (("ID"), final_dlst_mean_total),
             "DLST_MEAN_LCC": (("ID"), final_dlst_mean_lcc),
             "DLST_MEAN_NV": (("ID"), final_dlst_mean_nv),
-            "DLST_DAY_TOTAL": (("ID"), final_dlst_day_total),
-            "DLST_DAY_LCC": (("ID"), final_dlst_day_lcc),
-            "DLST_DAY_NV": (("ID"), final_dlst_day_nv),
-            "DLST_NIGHT_TOTAL": (("ID"), final_dlst_night_total),
-            "DLST_NIGHT_LCC": (("ID"), final_dlst_night_lcc),
-            "DLST_NIGHT_NV": (("ID"), final_dlst_night_nv),
+            # "DLST_DAY_TOTAL": (("ID"), final_dlst_day_total),
+            # "DLST_DAY_LCC": (("ID"), final_dlst_day_lcc),
+            # "DLST_DAY_NV": (("ID"), final_dlst_day_nv),
+            # "DLST_NIGHT_TOTAL": (("ID"), final_dlst_night_total),
+            # "DLST_NIGHT_LCC": (("ID"), final_dlst_night_lcc),
+            # "DLST_NIGHT_NV": (("ID"), final_dlst_night_nv),
             "DET_TOTAL": (("ID"), final_det_total),
             "DET_LCC": (("ID"), final_det_lcc),
             "DET_NV": (("ID"), final_det_nv),
             "DALBEDO_TOTAL": (("ID"), final_dalbedo_total),
             "DALBEDO_LCC": (("ID"), final_dalbedo_lcc),
             "DALBEDO_NV": (("ID"), final_dalbedo_nv),
-            "Area": (("ID"), final_area),
-            "WEIGHTS": (("ID"), final_weights)
+            # "Area": (("ID"), final_area),
+            # "WEIGHTS": (("ID"), final_weights)
         },
         coords={
             "ID": range(len(final_dlst_mean_total)),
@@ -394,6 +407,6 @@ for season in seasons:
             "LC": range(1, 11)
         })
 
-    ds.to_netcdf(out_dir + "Sensitivity/EndPoints/Seasonal/geographic/" +
-                 season + "/Confusion_Table_" + season + ".nc")
+    ds.to_netcdf(out_dir + "Sensitivity/EndPoints/Seasonal/albers/" + season +
+                 "/Confusion_Table_" + season + ".nc")
     print("All done!")
