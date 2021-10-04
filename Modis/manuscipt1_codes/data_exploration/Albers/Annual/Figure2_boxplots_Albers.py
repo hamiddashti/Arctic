@@ -38,9 +38,9 @@ def prepare_data(lc, et, albedo, lst, lc_names):
     df_et = pd.DataFrame(columns=lc_names)
     for i in range(len(lc_names)):
         print(i)
-        lst_tmp = lst.where(lc.isel(band=i) >= 0.98)
-        et_tmp = et.where(lc.isel(band=i) >= 0.98)
-        albedo_tmp = albedo.where(lc.isel(band=i) >= 0.98)
+        lst_tmp = lst.where(lc.isel(band=i) >= 0.5)
+        et_tmp = et.where(lc.isel(band=i) >= 0.5)
+        albedo_tmp = albedo.where(lc.isel(band=i) >= 0.5)
         I_lst = outliers_index(lst_tmp)
         I_et = outliers_index(et_tmp)
         I_albedo = outliers_index(albedo_tmp)

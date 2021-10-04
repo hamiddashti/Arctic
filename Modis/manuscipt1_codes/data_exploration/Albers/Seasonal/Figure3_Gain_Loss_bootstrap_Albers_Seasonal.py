@@ -117,13 +117,13 @@ class ScalarFormatterForceFormat(ScalarFormatter):
 
 yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
-N_M = 10000  #Number of bootstrap
+N_M = 5  #Number of bootstrap
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
            "Albers/Figures_MS1/")
 
-# out_dir = (
-#     "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
+out_dir = (
+    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
 
 # The map of dLST due to LCC
 dlst_lcc = xr.open_dataarray(
@@ -374,7 +374,7 @@ pltfont = {'fontname': 'Times New Roman'}
 fig.supxlabel('Fractional change in land cover', fontsize=16, **pltfont)
 fig.supylabel("$\Delta LST_{LCC}$ [k]", fontsize=16, **pltfont)
 plt.tight_layout()
-save(out_dir + "Annual_gain_loss_LST_Albers_CI_all.png")
+save(out_dir + "Annual_gain_loss_LST_Albers_CI.png")
 lst_slope_final = -lst_slopes[0:6, 1:7]
 lst_std_final = lst_std[0:6, 1:7]
 

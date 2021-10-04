@@ -23,6 +23,8 @@ from matplotlib.ticker import ScalarFormatter
 from statsmodels.stats.outliers_influence import summary_table
 from xarray.core.duck_array_ops import count
 import matplotlib.gridspec as gridspec
+import matplotlib.colors as colors
+import matplotlib as mpl
 """ ---------------------------------------------------------------------------
 defining functions used in this script
 ----------------------------------------------------------------------------"""
@@ -93,15 +95,28 @@ class ScalarFormatterForceFormat(ScalarFormatter):
         self.format = "%1.1f"  # Give format here
 
 
+# The following class is to define my own cmap in matplotlib
+class MidpointNormalize(colors.Normalize):
+    def __init__(self, vmin=None, vmax=None, vcenter=None, clip=False):
+        self.vcenter = vcenter
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.vcenter, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
+
+
 yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
 N_M = 10000  #Number of bootstrap
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
-# out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
-#            "Albers/Figures_MS1/")
+out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
+           "Albers/Figures_MS1/")
 
-out_dir = (
-    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
+# out_dir = (
+#     "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
 
 # The map of dLST due to LCC
 dlst_lcc = xr.open_dataarray(
@@ -134,7 +149,6 @@ dalbedo_clean = dalbedo.where((I_dlst == False) & (I_dalbedo == False)
 det_clean = det.where((I_dlst == False) & (I_dalbedo == False)
                       & (I_det == False))
 
-
 # weights_clean = weights.where(I_dlst == False)
 # dlcc_clean = dlcc.where((I_dlst == False) & (I_dalbedo == False)
 #                         & (I_det == False))
@@ -150,8 +164,6 @@ lc_names = [
     "EF", "DF", "Shrub", "Herbaceous", "Sparse", "Barren", "Fen", "Bog",
     "Shallow_Littoral", "Water"
 ]
-
-# Figure 2 of the manuscript (Main LST plot)
 
 t_list = []
 lst_slopes = np.zeros((len(lc_names), len(lc_names)))
@@ -197,8 +209,14 @@ for i in range(len(lc_names)):
         out_gain = binning(df=df_gain, bins=bins_gain, var="dlst")
         # Concatenate the loss and gain transitions and fit a linear model
         x = np.append(out_loss[0], out_gain[0])
-        # if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
-        #     continue
+        if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
+            slope_mean = 0.0
+            slope_std = 0.0
+            intercept_mean = 0.0
+            intercept_std = 0.0
+            lst_slopes[i, k] = 0.0
+            lst_std[i, k] = 0.0
+            continue
         y = np.append(out_loss[1], out_gain[1])
         sample_weights = np.append(out_loss[2].values, out_gain[2].values)
         boot_reg = bootstrap(x=x,
@@ -206,6 +224,8 @@ for i in range(len(lc_names)):
                              sample_weights=sample_weights,
                              n=N_M,
                              seed=1)
+        # if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
+        #     continue
         params = boot_reg[0]
         slope_mean = np.round(params[0, ].mean(), 3)
         slope_std = np.round(params[0, ].std(), 3)
@@ -265,6 +285,14 @@ for i in range(len(lc_names)):
         bins_gain = np.linspace(0, 1, 1001)
         out_gain = binning(df=df_gain, bins=bins_gain, var="det")
         x = np.append(out_loss[0], out_gain[0])
+        if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
+            slope_mean = 0.0
+            slope_std = 0.0
+            intercept_mean = 0.0
+            intercept_std = 0.0
+            et_slopes[i, k] = 0.0
+            et_std[i, k] = 0.0
+            continue
         y = np.append(out_loss[1], out_gain[1])
         sample_weights = np.append(out_loss[2].values, out_gain[2].values)
         boot_reg = bootstrap(x=x,
@@ -331,6 +359,14 @@ for i in range(len(lc_names)):
         bins_gain = np.linspace(0, 1, 101)
         out_gain = binning(df=df_gain, bins=bins_gain, var="dalbedo")
         x = np.append(out_loss[0], out_gain[0])
+        if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
+            slope_mean = 0.0
+            slope_std = 0.0
+            intercept_mean = 0.0
+            intercept_std = 0.0
+            albedo_slopes[i, k] = 0.0
+            albedo_std[i, k] = 0.0
+            continue
         y = np.append(out_loss[1], out_gain[1])
         sample_weights = np.append(out_loss[2].values, out_gain[2].values)
         boot_reg = bootstrap(x=x,
@@ -363,9 +399,18 @@ hi = wi * ar
 rows, cols = 1, 3
 gs = gridspec.GridSpec(rows, cols)
 fig = plt.figure(figsize=(wi, hi))
+
+cmap = mpl.cm.get_cmap("bwr").copy()
+cmap.set_bad(color='gray')
+# cmap.set_under(color='gray')
 for k in range(0, rows * cols):
     ax = plt.subplot(gs[k])
-    im = ax.imshow(data_slope[k], cmap="bwr")
+    a = np.nan_to_num(data_slope[k], nan=0.0)
+    b = np.where(data_slope[k] == 0, np.nan, a)
+    c = np.ma.masked_where(np.isnan(b), b)
+    c.filled(np.nan)
+    midnorm = MidpointNormalize(vmin=c.min(), vcenter=0, vmax=c.max())
+    im = ax.imshow(c, cmap=cmap, norm=midnorm)
     ax.set_title(titles[k])
     ax.set_xticks(np.arange(len(final_state)))
     ax.set_yticks(np.arange(len(initial_state)))
@@ -380,6 +425,8 @@ for k in range(0, rows * cols):
     for i in range(len(initial_state)):
         for j in range(len(final_state)):
             if i > j:
+                continue
+            if data_slope[k][i, j] == 0:
                 continue
             text = ax.text(j,
                            i,
@@ -397,5 +444,5 @@ ymin, ymax = ax.get_ybound()
 y2x_ratio = (ymax - ymin) / (xmax - xmin) * rows / cols
 fig.set_figheight(wi * y2x_ratio)
 gs.tight_layout(fig)
-plt.savefig(out_dir + "test.png")
+plt.savefig(out_dir + "Figure2_heat_map.png")
 print("all done!")
