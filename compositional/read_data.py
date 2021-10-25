@@ -40,16 +40,14 @@ lst_2003_2013_test.to_netcdf(out_dir + "lst_2003_2013_test.nc")
 lc_2003_2013_stacked = lc_2003_2013_test.stack(stacked=("lon", "lat"))
 lc_2003_2013_stacked = lc_2003_2013_stacked.rename({"time": "year"})
 lc_2003_2013_stacked = lc_2003_2013_stacked.reset_index("stacked")
+lc_2003_2013_stacked = lc_2003_2013_stacked.transpose("year","stacked","band")
 
 lst_2003_2013_stacked = lst_2003_2013_test.stack(stacked=("lon", "lat"))
 lst_2003_2013_stacked = lst_2003_2013_stacked.reset_index("stacked")
 
-lc_2003_2013_stacked.to_netcdf(out_dir + "lc_2003_2013_stacked.nc")
-lst_2003_2013_stacked.to_netcdf(out_dir + "lst_2003_2013_stacked.nc")
-
 ds = xr.Dataset(data_vars={
     "lst_2003_2013": (("year", "obs"), lst_2003_2013_stacked),
-    "lc_2003_2013": (("year", "band", "obs"), lc_2003_2013_stacked)
+    "lc_2003_2013": (("year", "obs","band"), lc_2003_2013_stacked)
 },
                 coords={
                     "year": [2003, 2013],

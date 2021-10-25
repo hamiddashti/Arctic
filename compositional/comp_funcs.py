@@ -5,11 +5,11 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
 
-in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
-X_pd = pd.read_csv(in_dir + "features.csv")
-y_pd = pd.read_csv(in_dir + "target.csv")
-X = X_pd.values
-y = y_pd.values
+# in_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
+# X_pd = pd.read_csv(in_dir + "features.csv")
+# y_pd = pd.read_csv(in_dir + "target.csv")
+# X = X_pd.values
+# y = y_pd.values
 
 
 def pivotCoord(x):
@@ -81,5 +81,5 @@ def comp_reg(X, y, method="classic"):
     return results_df
 
 
-comp_reg(X, y, method="classic")
-comp_reg(X, y, method="robust")
+# comp_reg(X, y, method="classic")
+# comp_reg(X, y, method="robust")
