@@ -10,5 +10,5 @@ y = da.shape[1]
 a = np.arange(0, (x * y)).reshape((x, y), order="F")
 b = da.copy(data=a)
 b.to_netcdf(
-    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/test5.nc"
+    "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/indices.nc"
 )

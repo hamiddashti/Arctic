@@ -75,7 +75,7 @@ shape_file = "/data/ABOVE/Final_data/shp_files/CoreDomain.shp"
 with fiona.open(shape_file, "r") as shapefile:
     shapes = [feature["geometry"] for feature in shapefile]
 
-years = np.arange(2008, 2010)
+years = np.array([2003, 2013])
 for i in range(len(years)):
     year1 = years[i]
     print(year1)
@@ -97,18 +97,34 @@ for i in range(len(years)):
                                 luc2_masked.ravel(),
                                 labels=unique)
 
+    conf_tmp_normalized = confusion_matrix(luc1_masked.ravel(),
+                                           luc2_masked.ravel(),
+                                           labels=unique,
+                                           normalize="true")
+
     df_not_normalized = pd.DataFrame(data=conf_tmp,
                                      index=class_names,
                                      columns=class_names)
     df_not_normalized.to_csv(out_dir + "confusion_table_not_normalized_" +
                              str(year1) + ".csv")
 
-    conf_tmp_normalized = confusion_matrix(luc1_masked.ravel(),
-                                           luc2_masked.ravel(),
-                                           labels=unique,
-                                           normalize="true")
-    df_normalized = pd.DataFrame(data=conf_tmp_normalized,
+    df_normalized = pd.DataFrame(data=np.round(conf_tmp_normalized, 3),
                                  index=class_names,
                                  columns=class_names)
     df_normalized.to_csv(out_dir + "confusion_table_normalized_" + str(year1) +
                          ".csv")
+
+# Combining the normalized and not normalized confusion tables
+conf_combined_list = []
+for i in range(10):
+    for j in range(10):
+        conf_combined_list.append(
+            str("{:.1e}".format(conf_tmp[i, j])) + "(" +
+            str(np.round(conf_tmp_normalized[i, j], 3)) + ")")
+
+conf_combined = np.array(conf_combined_list).reshape(10, 10)
+df_combined = pd.DataFrame(data=conf_combined,
+                                index=class_names,
+                                columns=class_names)
+df_combined.to_csv(out_dir + "confusion_table_combined_" + str(year1) +
+                        ".csv")

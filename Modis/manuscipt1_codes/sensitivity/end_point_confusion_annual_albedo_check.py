@@ -76,8 +76,8 @@ changed_pixels_mask = xr.open_dataarray(
     out_dir + "Natural_Variability/"
     "Natural_Variability_Annual_outputs/geographic/changed_pixels.nc")
 
-lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
+lst_mean = xr.open_dataarray(
+    in_dir + "LST_Final/LST/albers/Annual_Mean/albers_proj_lst_mean_Annual.nc")
 lst_day = xr.open_dataarray(in_dir +
                             "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
 lst_night = xr.open_dataarray(in_dir +

@@ -7,6 +7,13 @@
 """----------------------------------------------------------------------------
 Importing libraries used in this script
 ----------------------------------------------------------------------------"""
+""" ---------------------------------------------------------------------------
+defining functions used in this script
+----------------------------------------------------------------------------"""
+
+
+
+
 from logging import PercentStyle
 from matplotlib.pyplot import savefig
 from numpy.random import sample
@@ -23,15 +30,10 @@ from matplotlib.ticker import ScalarFormatter
 from statsmodels.stats.outliers_influence import summary_table
 from xarray.core.duck_array_ops import count
 import matplotlib.gridspec as gridspec
-""" ---------------------------------------------------------------------------
-defining functions used in this script
-----------------------------------------------------------------------------"""
-
-
 def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
-    
+
     :param int data: numpy array
     :param int m: # of std to include data 
     """
@@ -45,12 +47,12 @@ def outliers_index(data, m=3.5):
 def nv_vs_lcc(var_total, var_nv, var_lcc):
     # Select pixels we have variable_LCC, variable_total and variable_NV for them
     df = pd.DataFrame(data=None,
-                      index=[
-                          "\u0394VAR_NV_UP_LCC_UP", "\u0394VAR_NV_UP_LCC_Down",
-                          "\u0394VAR_NV_Down_LCC_UP",
-                          "\u0394VAR_NV_Down_LCC_Down"
-                      ],
-                      columns=["Mean_Total", "Mean_NV", "Mean_LCC", "Percent"])
+                      index=["\u0394VAR_NV_UP_LCC_UP",
+                             "\u0394VAR_NV_UP_LCC_Down",
+                             "\u0394VAR_NV_Down_LCC_UP",
+                             "\u0394VAR_NV_Down_LCC_Down"],
+                      columns=["Mean_Total", "StD_Total", "Mean_NV", "StD_NV",
+                               "Mean_LCC", "StD_LCC", "Percent"])
     dvar_total_tmp = var_total.where((var_total.notnull())
                                      & (var_nv.notnull())
                                      & (var_lcc.notnull()))
@@ -73,6 +75,7 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
 
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Mean_Total"] = np.round(dvar_total_nvUp_lccUp.mean().values, 3)
+
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Mean_NV"] = np.round(dvar_nv_nvUp_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_UP",
@@ -212,7 +215,7 @@ class ScalarFormatterForceFormat(ScalarFormatter):
 
 yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
-N_M = 100  #Number of bootstrap
+N_M = 10000  # Number of bootstrap
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
            "Albers/Figures_MS1/")
@@ -305,9 +308,9 @@ det_clean_total = det_nv_clean + det_lcc_clean
 dlcc_clean = dlcc
 normalized_confusion_clean = normalized_confusion
 
-#------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 #                              Some statistics
-#------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
 # Get some stats on difference in LST, ET and albedo
 df_stats = pd.DataFrame(data=None,
