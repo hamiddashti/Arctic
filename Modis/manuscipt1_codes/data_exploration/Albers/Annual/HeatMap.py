@@ -119,12 +119,12 @@ out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
 #     "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/")
 
 # The map of dLST due to LCC
-dlst_lcc = xr.open_dataarray(
-    in_dir + ("Natural_Variability/Natural_Variability_Annual_outputs/Albers/"
-              "dlst_lcc.nc"))
-dlst_total = xr.open_dataarray(
-    in_dir + ("Natural_Variability/Natural_Variability_Annual_outputs/Albers/"
-              "dlst_total.nc"))
+# dlst_lcc = xr.open_dataarray(
+#     in_dir + ("Natural_Variability/Natural_Variability_Annual_outputs/Albers/"
+#               "dlst_lcc.nc"))
+# dlst_total = xr.open_dataarray(
+#     in_dir + ("Natural_Variability/Natural_Variability_Annual_outputs/Albers/"
+#               "dlst_total.nc"))
 
 # This is the results of confusion table script
 ct = xr.open_dataset(

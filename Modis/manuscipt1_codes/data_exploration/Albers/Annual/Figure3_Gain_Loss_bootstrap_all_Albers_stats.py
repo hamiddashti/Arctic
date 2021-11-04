@@ -11,9 +11,6 @@ Importing libraries used in this script
 defining functions used in this script
 ----------------------------------------------------------------------------"""
 
-
-
-
 from logging import PercentStyle
 from matplotlib.pyplot import savefig
 from numpy.random import sample
@@ -30,6 +27,8 @@ from matplotlib.ticker import ScalarFormatter
 from statsmodels.stats.outliers_influence import summary_table
 from xarray.core.duck_array_ops import count
 import matplotlib.gridspec as gridspec
+
+
 def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
@@ -47,12 +46,15 @@ def outliers_index(data, m=3.5):
 def nv_vs_lcc(var_total, var_nv, var_lcc):
     # Select pixels we have variable_LCC, variable_total and variable_NV for them
     df = pd.DataFrame(data=None,
-                      index=["\u0394VAR_NV_UP_LCC_UP",
-                             "\u0394VAR_NV_UP_LCC_Down",
-                             "\u0394VAR_NV_Down_LCC_UP",
-                             "\u0394VAR_NV_Down_LCC_Down"],
-                      columns=["Mean_Total", "StD_Total", "Mean_NV", "StD_NV",
-                               "Mean_LCC", "StD_LCC", "Percent"])
+                      index=[
+                          "\u0394VAR_NV_UP_LCC_UP", "\u0394VAR_NV_UP_LCC_Down",
+                          "\u0394VAR_NV_Down_LCC_UP",
+                          "\u0394VAR_NV_Down_LCC_Down"
+                      ],
+                      columns=[
+                          "Mean_Total", "StD_Total", "Mean_NV", "StD_NV",
+                          "Mean_LCC", "StD_LCC", "Percent"
+                      ])
     dvar_total_tmp = var_total.where((var_total.notnull())
                                      & (var_nv.notnull())
                                      & (var_lcc.notnull()))
@@ -75,11 +77,17 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
 
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Mean_Total"] = np.round(dvar_total_nvUp_lccUp.mean().values, 3)
-
+    df.loc["\u0394VAR_NV_UP_LCC_UP",
+           "StD_Total"] = np.round(dvar_total_nvUp_lccUp.std().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Mean_NV"] = np.round(dvar_nv_nvUp_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_UP",
+           "StD_NV"] = np.round(dvar_nv_nvUp_lccUp.std().values, 3)
+
+    df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Mean_LCC"] = np.round(dvar_lcc_nvUp_lccUp.mean().values, 3)
+    df.loc["\u0394VAR_NV_UP_LCC_UP",
+           "StD_LCC"] = np.round(dvar_lcc_nvUp_lccUp.std().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Percent"] = np.round(percent_dvar_nvUp_lccUp.values, 3)
 
@@ -96,9 +104,18 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
     df.loc["\u0394VAR_NV_UP_LCC_Down",
            "Mean_Total"] = np.round(dvar_total_nvUp_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_Down",
+           "StD_Total"] = np.round(dvar_total_nvUp_lccDown.std().values, 3)
+
+    df.loc["\u0394VAR_NV_UP_LCC_Down",
            "Mean_NV"] = np.round(dvar_nv_nvUp_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_Down",
+           "StD_NV"] = np.round(dvar_nv_nvUp_lccDown.std().values, 3)
+
+    df.loc["\u0394VAR_NV_UP_LCC_Down",
            "Mean_LCC"] = np.round(dvar_lcc_nvUp_lccDown.mean().values, 3)
+    df.loc["\u0394VAR_NV_UP_LCC_Down",
+           "StD_LCC"] = np.round(dvar_lcc_nvUp_lccDown.std().values, 3)
+
     df.loc["\u0394VAR_NV_UP_LCC_Down",
            "Percent"] = np.round(percent_dvar_nvUp_lccDown.values, 3)
 
@@ -114,9 +131,18 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
     df.loc["\u0394VAR_NV_Down_LCC_Down",
            "Mean_Total"] = np.round(dvar_total_nvDown_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_Down",
+           "StD_Total"] = np.round(dvar_total_nvDown_lccDown.std().values, 3)
+
+    df.loc["\u0394VAR_NV_Down_LCC_Down",
            "Mean_NV"] = np.round(dvar_nv_nvDown_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_Down",
+           "StD_NV"] = np.round(dvar_nv_nvDown_lccDown.std().values, 3)
+
+    df.loc["\u0394VAR_NV_Down_LCC_Down",
            "Mean_LCC"] = np.round(dvar_lcc_nvDown_lccDown.mean().values, 3)
+    df.loc["\u0394VAR_NV_Down_LCC_Down",
+           "StD_LCC"] = np.round(dvar_lcc_nvDown_lccDown.std().values, 3)
+
     df.loc["\u0394VAR_NV_Down_LCC_Down",
            "Percent"] = np.round(percent_dvar_nvDown_lccDown.values, 3)
 
@@ -132,9 +158,17 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Mean_Total"] = np.round(dvar_total_nvDown_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
+           "StD_Total"] = np.round(dvar_total_nvDown_lccUp.std().values, 3)
+
+    df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Mean_NV"] = np.round(dvar_nv_nvDown_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
+           "StD_NV"] = np.round(dvar_nv_nvDown_lccUp.std().values, 3)
+
+    df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Mean_LCC"] = np.round(dvar_lcc_nvDown_lccUp.mean().values, 3)
+    df.loc["\u0394VAR_NV_Down_LCC_UP",
+           "StD_LCC"] = np.round(dvar_lcc_nvDown_lccUp.std().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Percent"] = np.round(percent_dvar_nvDown_lccUp.values, 3)
     return df

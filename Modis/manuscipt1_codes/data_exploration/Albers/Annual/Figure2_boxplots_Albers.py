@@ -219,6 +219,7 @@ df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2003,
 myboxplot_group(df_final_lst, df_final_et, df_final_albedo, "2003", lc_names,
                 txt_pos, "Boxplot_groups_2003.png")
 
+
 df_final_lst, df_final_et, df_final_albedo = prepare_data(lc=lc_2013,
                                                           et=et_2013,
                                                           albedo=albedo_2013,

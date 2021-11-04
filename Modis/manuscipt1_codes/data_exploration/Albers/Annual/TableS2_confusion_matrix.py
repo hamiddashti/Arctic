@@ -124,7 +124,6 @@ for i in range(10):
 
 conf_combined = np.array(conf_combined_list).reshape(10, 10)
 df_combined = pd.DataFrame(data=conf_combined,
-                                index=class_names,
-                                columns=class_names)
-df_combined.to_csv(out_dir + "confusion_table_combined_" + str(year1) +
-                        ".csv")
+                           index=class_names,
+                           columns=class_names)
+df_combined.to_csv(out_dir + "confusion_table_combined_" + str(year1) + ".csv")

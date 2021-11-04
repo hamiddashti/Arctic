@@ -25,7 +25,7 @@ def outliers_index(data, m=3.5):
 in_dir = "/data/ABOVE/Final_data/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
            "Albers/Figures_MS1/")
-out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
+# out_dir = "/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/test/"
 lst_mean = xr.open_dataset(
     in_dir +
     ("LST_Final/LST/Annual_Mean/albers/albers_proj_lst_mean_Annual.nc"),

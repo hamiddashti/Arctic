@@ -29,13 +29,11 @@ for i in range(0,10):
     z = comp_funcs.pivotCoord(Xj)
     a = z[:,0]
     tmp[:,i] = coef[i+1]*a
-
-y
 y_pred = coef[0]+tmp.sum(axis=1)
 
 corr,_ = pearsonr(y_pred,np.squeeze(y))
 corr**2
-corr 
+
 
 plt.close()
 plt.scatter(y,y_pred)
