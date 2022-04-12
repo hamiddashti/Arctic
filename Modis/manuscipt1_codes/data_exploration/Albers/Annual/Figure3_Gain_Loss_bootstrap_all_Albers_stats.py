@@ -53,7 +53,7 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
                       ],
                       columns=[
                           "Mean_Total", "StD_Total", "Mean_NV", "StD_NV",
-                          "Mean_LCC", "StD_LCC", "Percent"
+                          "Mean_LCC", "StD_LCC", "Area", "Percent"
                       ])
     dvar_total_tmp = var_total.where((var_total.notnull())
                                      & (var_nv.notnull())
@@ -89,6 +89,8 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
     df.loc["\u0394VAR_NV_UP_LCC_UP",
            "StD_LCC"] = np.round(dvar_lcc_nvUp_lccUp.std().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_UP",
+           "Area"] = np.round(dvar_total_nvUp_lccUp.notnull().sum().values, 3)
+    df.loc["\u0394VAR_NV_UP_LCC_UP",
            "Percent"] = np.round(percent_dvar_nvUp_lccUp.values, 3)
 
     # pixels where nv goes up but lcc goes down
@@ -115,6 +117,11 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
            "Mean_LCC"] = np.round(dvar_lcc_nvUp_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_UP_LCC_Down",
            "StD_LCC"] = np.round(dvar_lcc_nvUp_lccDown.std().values, 3)
+    df.loc["\u0394VAR_NV_UP_LCC_Down",
+           "Area"] = np.round(dvar_total_nvUp_lccDown.notnull().sum().values,
+                              3)
+    df.loc["\u0394VAR_NV_UP_LCC_Down",
+           "Area"] = np.round(percent_dvar_nvUp_lccDown.values, 3)
 
     df.loc["\u0394VAR_NV_UP_LCC_Down",
            "Percent"] = np.round(percent_dvar_nvUp_lccDown.values, 3)
@@ -142,7 +149,9 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
            "Mean_LCC"] = np.round(dvar_lcc_nvDown_lccDown.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_Down",
            "StD_LCC"] = np.round(dvar_lcc_nvDown_lccDown.std().values, 3)
-
+    df.loc["\u0394VAR_NV_Down_LCC_Down",
+           "Area"] = np.round(dvar_total_nvDown_lccDown.notnull().sum().values,
+                              3)
     df.loc["\u0394VAR_NV_Down_LCC_Down",
            "Percent"] = np.round(percent_dvar_nvDown_lccDown.values, 3)
 
@@ -164,11 +173,13 @@ def nv_vs_lcc(var_total, var_nv, var_lcc):
            "Mean_NV"] = np.round(dvar_nv_nvDown_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "StD_NV"] = np.round(dvar_nv_nvDown_lccUp.std().values, 3)
-
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Mean_LCC"] = np.round(dvar_lcc_nvDown_lccUp.mean().values, 3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "StD_LCC"] = np.round(dvar_lcc_nvDown_lccUp.std().values, 3)
+    df.loc["\u0394VAR_NV_Down_LCC_UP",
+           "Area"] = np.round(dvar_total_nvDown_lccUp.notnull().sum().values,
+                              3)
     df.loc["\u0394VAR_NV_Down_LCC_UP",
            "Percent"] = np.round(percent_dvar_nvDown_lccUp.values, 3)
     return df
@@ -243,6 +254,7 @@ def binning(df, bins, var):
 
 
 class ScalarFormatterForceFormat(ScalarFormatter):
+
     def _set_format(self):  # Override function that finds format to use.
         self.format = "%1.1f"  # Give format here
 

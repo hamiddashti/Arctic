@@ -178,6 +178,7 @@ fig, axs = plt.subplots(2, 4, figsize=(15, 6), facecolor='w', edgecolor='k')
 axs = axs.ravel()
 axs_counter = 0
 t_list = []
+
 for i in range(len(lc_names)):
     # Skip the bog and shallow and litteral classes due to very sparse
     # data points
@@ -269,61 +270,6 @@ for i in range(len(lc_names)):
     axs[axs_counter].set_ylim(-3, 3)
     # Now plot class transitions on top of the gain/loss
     # for k in range(2):
-    for k in range(len(lc_names)):
-        if (k == 7) | (k == 8) | (k == 9) | (k == i):
-            continue
-        # If a transition plotted in the previous subplots skip it.
-        t_list.append(str(i) + str(k))
-        if (str(k) + str(i)) in t_list:
-            continue
-        print(f"{lc_names[i]} transition to --> {lc_names[k]}")
-        # transintion_loss is transition of class i to class k
-        transintion_loss = normalized_confusion_clean[:, i, k]
-        df_loss = pd.DataFrame({
-            "dlst": dlst_clean,
-            # "w": weights_clean,
-            "dlcc": -transintion_loss
-        })
-        df_loss = df_loss.dropna()
-        bins_loss = np.linspace(-1, 0, 1001)
-        df_loss["bins"] = pd.cut(df_loss["dlcc"],
-                                 bins=bins_loss,
-                                 include_lowest=True)
-        out_loss = binning(df=df_loss, bins=bins_loss, var="dlst")
-        # transintion_gain is transition of class k to class i
-        transintion_gain = normalized_confusion_clean[:, k, i]
-        df_gain = pd.DataFrame({
-            "dlst": dlst_clean,
-            # "w": weights_clean,
-            "dlcc": transintion_gain,
-        })
-        df_gain = df_gain.dropna()
-        bins_gain = np.linspace(0, 1, 1001)
-        out_gain = binning(df=df_gain, bins=bins_gain, var="dlst")
-        # Concatenate the loss and gain transitions and fit a linear model
-        x = np.append(out_loss[0], out_gain[0])
-        if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
-            continue
-        y = np.append(out_loss[1], out_gain[1])
-        sample_weights = np.append(out_loss[2].values, out_gain[2].values)
-        boot_reg = bootstrap(x=x,
-                             y=y,
-                             sample_weights=sample_weights,
-                             n=N_M,
-                             seed=1)
-        params = boot_reg[0]
-        predicts = boot_reg[1]
-        axs[axs_counter].plot(x, predicts, color=palette[k], alpha=0.5)
-        mean_predicts = np.mean(predicts, axis=1)
-        axs[axs_counter].plot(x,
-                              mean_predicts,
-                              color=palette[k],
-                              linewidth=1,
-                              label=lc_names[k])
-        slope_mean = np.round(params[0, ].mean(), 3)
-        slope_std = np.round(params[0, ].std(), 3)
-        intercept_mean = np.round(params[1, ].mean(), 3)
-        intercept_std = np.round(params[1, ].std(), 2)
     axs_counter += 1
 
 # Sorting out the legend
