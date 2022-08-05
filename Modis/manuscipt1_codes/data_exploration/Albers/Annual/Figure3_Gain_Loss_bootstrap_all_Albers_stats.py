@@ -11,6 +11,9 @@ Importing libraries used in this script
 defining functions used in this script
 ----------------------------------------------------------------------------"""
 
+
+
+
 from logging import PercentStyle
 from matplotlib.pyplot import savefig
 from numpy.random import sample
@@ -27,8 +30,6 @@ from matplotlib.ticker import ScalarFormatter
 from statsmodels.stats.outliers_influence import summary_table
 from xarray.core.duck_array_ops import count
 import matplotlib.gridspec as gridspec
-
-
 def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
@@ -370,74 +371,74 @@ df_stats = pd.DataFrame(data=None,
                         columns=["Max", "Min", "Mean", "StD"])
 
 df_stats.loc["\u0394LST_LCC[K]", "Max"] = np.round(dlst_lcc_clean.max().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394LST_LCC[K]", "Min"] = np.round(dlst_lcc_clean.min().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394LST_LCC[K]",
-             "Mean"] = np.round(dlst_lcc_clean.mean().values, 3)
+             "Mean"] = np.round(dlst_lcc_clean.mean().values, 1)
 df_stats.loc["\u0394LST_LCC[K]", "StD"] = np.round(dlst_lcc_clean.std().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394LST_NV[K]", "Max"] = np.round(dlst_nv_clean.max().values,
-                                                  3)
+                                                  1)
 df_stats.loc["\u0394LST_NV[K]", "Min"] = np.round(dlst_nv_clean.min().values,
-                                                  3)
+                                                  1)
 df_stats.loc["\u0394LST_NV[K]", "Mean"] = np.round(dlst_nv_clean.mean().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394LST_NV[K]", "StD"] = np.round(dlst_nv_clean.std().values,
-                                                  3)
+                                                  1)
 df_stats.loc["\u0394LST_Total[K]",
-             "Max"] = np.round(dlst_clean_total.max().values, 3)
+             "Max"] = np.round(dlst_clean_total.max().values, 1)
 df_stats.loc["\u0394LST_Total[K]",
-             "Min"] = np.round(dlst_clean_total.min().values, 3)
+             "Min"] = np.round(dlst_clean_total.min().values, 1)
 df_stats.loc["\u0394LST_Total[K]",
-             "Mean"] = np.round(dlst_clean_total.mean().values, 3)
+             "Mean"] = np.round(dlst_clean_total.mean().values, 1)
 df_stats.loc["\u0394LST_Total[K]",
-             "StD"] = np.round(dlst_clean_total.std().values, 3)
+             "StD"] = np.round(dlst_clean_total.std().values, 1)
 df_stats.loc["\u0394Albedo_LCC",
-             "Max"] = np.round(dalbedo_lcc_clean.max().values, 3)
+             "Max"] = np.round(dalbedo_lcc_clean.max().values, 2)
 df_stats.loc["\u0394Albedo_LCC",
-             "Min"] = np.round(dalbedo_lcc_clean.min().values, 3)
+             "Min"] = np.round(dalbedo_lcc_clean.min().values, 2)
 df_stats.loc["\u0394Albedo_LCC",
-             "Mean"] = np.round(dalbedo_lcc_clean.mean().values, 3)
+             "Mean"] = np.round(dalbedo_lcc_clean.mean().values, 2)
 df_stats.loc["\u0394Albedo_LCC",
-             "StD"] = np.round(dalbedo_lcc_clean.std().values, 3)
+             "StD"] = np.round(dalbedo_lcc_clean.std().values, 2)
 df_stats.loc["\u0394Albedo_NV",
-             "Max"] = np.round(dalbedo_nv_clean.max().values, 3)
+             "Max"] = np.round(dalbedo_nv_clean.max().values, 2)
 df_stats.loc["\u0394Albedo_NV",
-             "Min"] = np.round(dalbedo_nv_clean.min().values, 3)
+             "Min"] = np.round(dalbedo_nv_clean.min().values, 2)
 df_stats.loc["\u0394Albedo_NV",
-             "Mean"] = np.round(dalbedo_nv_clean.mean().values, 3)
+             "Mean"] = np.round(dalbedo_nv_clean.mean().values, 2)
 df_stats.loc["\u0394Albedo_NV",
-             "StD"] = np.round(dalbedo_nv_clean.std().values, 3)
+             "StD"] = np.round(dalbedo_nv_clean.std().values, 2)
 df_stats.loc["\u0394Albedo_Total",
-             "Max"] = np.round(dalbedo_clean_total.max().values, 3)
+             "Max"] = np.round(dalbedo_clean_total.max().values, 2)
 df_stats.loc["\u0394Albedo_Total",
-             "Min"] = np.round(dalbedo_clean_total.min().values, 3)
+             "Min"] = np.round(dalbedo_clean_total.min().values, 2)
 df_stats.loc["\u0394Albedo_Total",
-             "Mean"] = np.round(dalbedo_clean_total.mean().values, 3)
+             "Mean"] = np.round(dalbedo_clean_total.mean().values, 2)
 df_stats.loc["\u0394Albedo_Total",
-             "StD"] = np.round(dalbedo_clean_total.std().values, 3)
+             "StD"] = np.round(dalbedo_clean_total.std().values, 2)
 df_stats.loc["\u0394ET_LCC[mm]", "Max"] = np.round(det_lcc_clean.max().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394ET_LCC[mm]", "Min"] = np.round(det_lcc_clean.min().values,
-                                                   3)
+                                                   1)
 df_stats.loc["\u0394ET_LCC[mm]",
-             "Mean"] = np.round(det_lcc_clean.mean().values, 3)
+             "Mean"] = np.round(det_lcc_clean.mean().values, 1)
 df_stats.loc["\u0394ET_LCC[mm]", "StD"] = np.round(det_lcc_clean.std().values,
-                                                   3)
-df_stats.loc["\u0394ET_NV[mm]", "Max"] = np.round(det_nv_clean.max().values, 3)
-df_stats.loc["\u0394ET_NV[mm]", "Min"] = np.round(det_nv_clean.min().values, 3)
+                                                   1)
+df_stats.loc["\u0394ET_NV[mm]", "Max"] = np.round(det_nv_clean.max().values, 1)
+df_stats.loc["\u0394ET_NV[mm]", "Min"] = np.round(det_nv_clean.min().values, 1)
 df_stats.loc["\u0394ET_NV[mm]", "Mean"] = np.round(det_nv_clean.mean().values,
-                                                   3)
-df_stats.loc["\u0394ET_NV[mm]", "StD"] = np.round(det_nv_clean.std().values, 3)
+                                                   1)
+df_stats.loc["\u0394ET_NV[mm]", "StD"] = np.round(det_nv_clean.std().values, 1)
 df_stats.loc["\u0394ET_Total[mm]",
-             "Max"] = np.round(det_clean_total.max().values, 3)
+             "Max"] = np.round(det_clean_total.max().values, 1)
 df_stats.loc["\u0394ET_Total[mm]",
-             "Min"] = np.round(det_clean_total.min().values, 3)
+             "Min"] = np.round(det_clean_total.min().values, 1)
 df_stats.loc["\u0394ET_Total[mm]",
-             "Mean"] = np.round(det_clean_total.mean().values, 3)
+             "Mean"] = np.round(det_clean_total.mean().values, 1)
 df_stats.loc["\u0394ET_Total[mm]",
-             "StD"] = np.round(det_clean_total.std().values, 3)
+             "StD"] = np.round(det_clean_total.std().values, 1)
 
 # Change in increase/decrease in variables for different direction of
 # variable_LCC and variable_NV

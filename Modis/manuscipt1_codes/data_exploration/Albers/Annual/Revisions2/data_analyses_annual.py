@@ -124,7 +124,7 @@ dlst_total = xr.open_dataarray(
 # variability.
 ct = xr.open_dataset(
     in_dir + ("Sensitivity/EndPoints/Annual/Geographic/02_percent/"
-              "Confusion_Table_final_02precent_new_albedo.nc"))
+              "one_lat_test.nc"))
 
 # ct = xr.open_dataset(
 #     in_dir +
@@ -407,7 +407,7 @@ pltfont = {'fontname': 'Times New Roman'}
 fig.supxlabel('Fractional change in land cover', fontsize=16, **pltfont)
 fig.supylabel("$\Delta LST_{LCC}$ [k]", fontsize=16, **pltfont)
 plt.tight_layout()
-save(out_dir + "LST_test_2percent.png")
+save(out_dir + "LST_test_2percent_.png")
 
 # --------------------------------------------------------------------------
 

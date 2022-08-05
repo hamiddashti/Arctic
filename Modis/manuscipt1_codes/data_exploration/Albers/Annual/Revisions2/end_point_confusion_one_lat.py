@@ -53,7 +53,7 @@ def confusionmatrix(actual, predicted, unique, imap):
     return matrix, matrix_normalized
 
 
-NUMBER_OF_CLASSES = 10  # [DF,DF,shrub,herb,sparse,wetland, water]
+NUMBER_OF_CLASSES = 10  #[DF,DF,shrub,herb,sparse,wetland, water]
 class_names = [
     "EF", "DF", "Shrub", "Herb", "Sparse", "Barren", "Fen", "Bog", "SL",
     "water"
@@ -69,28 +69,28 @@ for i in range(0, NUMBER_OF_CLASSES):
 in_dir = "/data/ABOVE/Final_data/"
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 
-luc2003 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2003.tif')
-luc2013 = rasterio.open(in_dir + 'LUC/LUC_10/mosaic_reproject_2013.tif')
+luc2003 = rasterio.open(in_dir + 'LUC/geographic/LUC_10/mosaic_reproject_2003.tif')
+luc2013 = rasterio.open(in_dir + 'LUC/geographic/LUC_10/mosaic_reproject_2013.tif')
 
 changed_pixels_mask = xr.open_dataarray(
-    out_dir + "Natural_Variability/"
-    "Natural_Variability_Annual_outputs/geographic/changed_pixels.nc")
+    '/data/home/hamiddashti/nasa_above/outputs/Natural_Variability/'
+    'Natural_Variability_Annual_outputs/geographic/changed_pixels.nc')
 
 lst_mean = xr.open_dataarray(in_dir +
-                             "LST_Final/LST/Annual_Mean/lst_mean_annual.nc")
+                             "LST_Final/LST/Annual_Mean/geographic/lst_mean_annual.nc")
 lst_day = xr.open_dataarray(in_dir +
-                            "LST_Final/LST/Annual_Mean/lst_day_annual.nc")
+                            "LST_Final/LST/Annual_Mean/geographic/lst_day_annual.nc")
 lst_night = xr.open_dataarray(in_dir +
-                              "LST_Final/LST/Annual_Mean/lst_night_annual.nc")
-et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/ET_Annual.nc")
+                              "LST_Final/LST/Annual_Mean/geographic/lst_night_annual.nc")
+et = xr.open_dataarray(in_dir + "ET_Final/Annual_ET/geographic/ET_Annual.nc")
 et = et.rename({"x": "lon", "y": "lat"})
 et = et.where(lst_mean.loc[2003:2015].notnull())
 
 # albedo = xr.open_dataarray(in_dir +
 #                            "ALBEDO_Final/Annual_Albedo/Albedo_annual.nc")
 albedo = xr.open_dataarray(
-    "/data/home/hamiddashti/nasa_above/outputs/"
-    "albedo_processed/step4_resampling/annual/resampled/annual_albedo.nc")
+    "/data/ABOVE/Final_data/ALBEDO_Final/Annual_Albedo/geographic/annual_albedo.nc")
+
 lst_mean_2003 = lst_mean.loc[2003]
 lst_mean_2013 = lst_mean.loc[2013]
 lst_day_2003 = lst_day.loc[2003]
@@ -159,13 +159,11 @@ dlcc = xr.open_dataarray(
     out_dir + "Natural_Variability/"
     "Natural_Variability_Annual_outputs/geographic/02_percent/dlcc.nc")
 
-# Calculate the area weights based on the latitude
+changed_pixels_mask = changed_pixels_mask.where((changed_pixels_mask.lat>=64)&(changed_pixels_mask.lat<=65))
+
 weights = np.cos(np.deg2rad(dlst_mean_total.lat))
 weights = np.transpose([weights.values] * dlst_mean_total.shape[1])
-
 shape_file = in_dir + "shp_files/ABoVE_1km_Grid_4326_area.shp"
-# shape_file = ("/data/home/hamiddashti/mnt/nasa_above/working/modis_analyses/"
-# "test/test.shp")
 print('reading the shapefile')
 with fiona.open(shape_file, "r") as shapefile:
     shapes = [feature["geometry"] for feature in shapefile]
@@ -242,10 +240,9 @@ imap = {key: i for i, key in enumerate(unique)}
 # def cal_confus(i):
 # for i in range(len(shapes)):
 
-# for i in range(6588237, 6698651):
 for i in range(len(shapes)):
     print(i)
-    if changed_pixels_mask_val[i] == 0:
+    if changed_pixels_mask_val[i] != 1:
         continue
     luc2003_masked = mymask(tif=luc2003, shp=[shapes[i]])[0]
     luc2013_masked = mymask(tif=luc2013, shp=[shapes[i]])[0]
@@ -392,7 +389,5 @@ ds = xr.Dataset(
 
 ds.to_netcdf(
     out_dir +
-    "Sensitivity/EndPoints/Annual/Geographic/02_percent/Confusion_Table_final_02precent_new_albedo.nc"
+    "Sensitivity/EndPoints/Annual/Geographic/02_percent/one_lat_test.nc"
 )
-
-print("All done!")

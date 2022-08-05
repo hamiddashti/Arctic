@@ -7,6 +7,13 @@
 """----------------------------------------------------------------------------
 Importing libraries used in this script
 ----------------------------------------------------------------------------"""
+""" ---------------------------------------------------------------------------
+defining functions used in this script
+----------------------------------------------------------------------------"""
+
+
+
+
 from logging import PercentStyle
 from matplotlib.pyplot import savefig
 from numpy.random import sample
@@ -22,15 +29,10 @@ import seaborn as sns
 from matplotlib.ticker import ScalarFormatter
 from statsmodels.stats.outliers_influence import summary_table
 from xarray.core.duck_array_ops import count
-""" ---------------------------------------------------------------------------
-defining functions used in this script
-----------------------------------------------------------------------------"""
-
-
 def outliers_index(data, m=3.5):
     """
     Returns true if a value is outlier
-    
+
     :param int data: numpy array
     :param int m: # of std to include data 
     """
@@ -117,7 +119,7 @@ class ScalarFormatterForceFormat(ScalarFormatter):
 
 yfmt = ScalarFormatterForceFormat()
 yfmt.set_powerlimits((0, 0))
-N_M = 10000  #Number of bootstrap
+N_M = 10  # Number of bootstrap
 in_dir = ("/data/home/hamiddashti/nasa_above/outputs/")
 out_dir = ("/data/home/hamiddashti/nasa_above/outputs/data_analyses/Annual/"
            "Albers/Figures_MS1/")
@@ -194,7 +196,7 @@ for i in range(len(lc_names)):
         "dlcc": dlcc_tmp_clean
     })
     df = df.dropna()
-    #----------------------------------------------
+    # ----------------------------------------------
     # Bin data based on dLCC
     dlcc_bins = np.linspace(-1.001, 1, 2002)
     gian_loss_bins = binning(df=df, bins=dlcc_bins, var="dlst")
@@ -217,10 +219,10 @@ for i in range(len(lc_names)):
                           color="black",
                           linewidth=1,
                           label='Mean model')
-    slope_mean = np.round(params[0, ].mean(), 3)
-    slope_std = np.round(params[0, ].std(), 3)
-    intercept_mean = np.round(params[1, ].mean(), 3)
-    intercept_std = np.round(params[1, ].std(), 2)
+    slope_mean = np.round(params[0, ].mean(), 1)
+    slope_std = np.round(params[0, ].std(), 1)
+    intercept_mean = np.round(params[1, ].mean(), 1)
+    intercept_std = np.round(params[1, ].std(), 1)
     if slope_mean > 0:
         eq_text = (f"\u0394LST = {intercept_mean}" + "(\u00B1" +
                    f"{intercept_std})" + "+" + f"{slope_mean}(\u00B1" +
@@ -237,8 +239,8 @@ for i in range(len(lc_names)):
                           eq_text,
                           horizontalalignment='center',
                           verticalalignment='center',
-                          fontsize=8,
-                          fontweight="bold",
+                          fontsize=12,
+                          #   fontweight="bold",
                           color="black")
     axs[axs_counter].set_xlim(-1, 1)
     axs[axs_counter].set_ylim(-3, 3)
@@ -357,9 +359,9 @@ for i in range(len(lc_names)):
                           color="black",
                           linewidth=1,
                           label='Mean model')
-    slope_mean = np.round(params[0, ].mean(), 3)
-    slope_std = np.round(params[0, ].std(), 3)
-    intercept_mean = np.round(params[1, ].mean(), 3)
+    slope_mean = np.round(params[0, ].mean(), 2)
+    slope_std = np.round(params[0, ].std(), 2)
+    intercept_mean = np.round(params[1, ].mean(), 2)
     intercept_std = np.round(params[1, ].std(), 2)
     if slope_mean > 0:
         eq_text = (f"\u0394ET = {intercept_mean}" + "(\u00B1" +
@@ -377,8 +379,8 @@ for i in range(len(lc_names)):
                           eq_text,
                           horizontalalignment='center',
                           verticalalignment='center',
-                          fontsize=8,
-                          fontweight="bold",
+                          fontsize=11,
+                        #   fontweight="bold",
                           color="black")
     axs[axs_counter].text(0.18,
                           -50,
@@ -406,63 +408,6 @@ for i in range(len(lc_names)):
                                     lw=2))
     axs[axs_counter].set_xlim(-1, 1)
     axs[axs_counter].set_ylim(-60, 60)
-    for k in range(len(lc_names)):
-        if (k == 7) | (k == 8) | (k == 9) | (k == i):
-            continue
-        t_list.append(str(i) + str(k))
-        if (str(k) + str(i)) in t_list:
-            continue
-        print(f"{lc_names[i]} transition to --> {lc_names[k]}")
-        # transintion_loss is transition of class i to class k
-        transintion_loss = normalized_confusion_clean[:, i, k]
-        df_loss = pd.DataFrame({
-            "dlst": dlst_clean,
-            "dalbedo": dalbedo_clean,
-            "det": det_clean,
-            # "w": weights_clean,
-            "dlcc": -transintion_loss
-        })
-        df_loss = df_loss.dropna()
-        bins_loss = np.linspace(-1, 0, 1001)
-        df_loss["bins"] = pd.cut(df_loss["dlcc"],
-                                 bins=bins_loss,
-                                 include_lowest=True)
-        out_loss = binning(df=df_loss, bins=bins_loss, var="det")
-        # transintion_gain is transition of class k to class i
-        transintion_gain = normalized_confusion_clean[:, k, i]
-        df_gain = pd.DataFrame({
-            "dlst": dlst_clean,
-            "dalbedo": dalbedo_clean,
-            "det": det_clean,
-            # "w": weights_clean,
-            "dlcc": transintion_gain,
-        })
-        df_gain = df_gain.dropna()
-        bins_gain = np.linspace(0, 1, 1001)
-        out_gain = binning(df=df_gain, bins=bins_gain, var="det")
-        x = np.append(out_loss[0], out_gain[0])
-        if ((np.min(x) > -0.5) | (np.max(x) < 0.5)):
-            continue
-        y = np.append(out_loss[1], out_gain[1])
-        sample_weights = np.append(out_loss[2].values, out_gain[2].values)
-        boot_reg = bootstrap(x=x,
-                             y=y,
-                             sample_weights=sample_weights,
-                             n=N_M,
-                             seed=1)
-        params = boot_reg[0]
-        predicts = boot_reg[1]
-        axs[axs_counter].plot(x, predicts, color=palette[k], alpha=0.5)
-        mean_predicts = np.mean(predicts, axis=1)
-        axs[axs_counter].plot(x,
-                              mean_predicts,
-                              color=palette[k],
-                              linewidth=1,
-                              label=lc_names[k])
-        slope_mean = np.round(params[0, ].mean(), 3)
-        slope_std = np.round(params[0, ].std(), 3)
-        intercept_mean = np.round(params[1, ].mean(), 3)
-        intercept_std = np.round(params[1, ].std(), 2)
     axs_counter += 1
 
 # Sorting out the legend
